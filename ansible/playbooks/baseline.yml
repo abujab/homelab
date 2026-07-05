@@ -1,0 +1,223 @@
+---
+# ==============================================================================
+# Playbook: baseline.yml
+#
+# Purpose
+# -------
+# Prepare every Raspberry Pi with a common baseline before we install Kubernetes.
+#
+# Think of this as the equivalent of creating a "golden server image".
+# Every node should have the same:
+#
+#   • Time configuration
+#   • Base software
+#   • Networking tools
+#   • SSH configuration
+#   • Kernel configuration
+#
+# This ensures every Pi behaves identically.
+# ==============================================================================
+
+- name: Baseline configuration for Raspberry Pi nodes
+
+  # "hosts" tells Ansible WHICH machines to run on.
+  #
+  # Here we are using the inventory GROUP called "pis",
+  # not individual host names.
+  #
+  # Inventory:
+  #
+  # all
+  # └── pis
+  #     ├── pi4mB01
+  #     ├── pi4mB02
+  #     ├── pi4mB03
+  #     └── pi4mB04
+  #
+  hosts: pis
+
+  # Many of the tasks require root privileges.
+  #
+  # Instead of writing "sudo" for every command,
+  # become:true tells Ansible to automatically use sudo.
+  #
+  become: true
+
+  tasks:
+
+    # --------------------------------------------------------------------------
+    # Set timezone
+    #
+    # Why?
+    #
+    # We live in Germany.
+    #
+    # Every log file
+    # Every Kubernetes event
+    # Every monitoring graph
+    #
+    # should use Europe/Berlin time.
+    #
+    # Otherwise troubleshooting becomes confusing.
+    #
+    # Example:
+    #
+    # Grafana says service restarted at 03:15 UTC
+    # Journal says 05:15 CEST
+    #
+    # Same event...
+    # different timezone.
+    # --------------------------------------------------------------------------
+
+    - name: Set timezone to Europe/Berlin
+      community.general.timezone:
+        name: Europe/Berlin
+
+    # --------------------------------------------------------------------------
+    # Install packages
+    #
+    # These are our "Swiss Army Knife" utilities.
+    #
+    # curl      -> Call REST APIs
+    # wget      -> Download files
+    # git       -> Source control
+    # vim       -> Editor
+    # htop      -> Better task manager
+    # net-tools -> ifconfig, netstat
+    # dnsutils  -> dig, nslookup
+    # chrony    -> Time synchronization
+    #
+    # Kubernetes nodes rely on accurate clocks.
+    #
+    # Certificates
+    # Tokens
+    # Logs
+    #
+    # all depend on synchronized time.
+    # --------------------------------------------------------------------------
+
+    - name: Install baseline packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - wget
+          - git
+          - vim
+          - htop
+          - net-tools
+          - dnsutils
+          - ca-certificates
+          - gnupg
+          - lsb-release
+          - chrony
+        state: present
+        update_cache: true
+
+    # --------------------------------------------------------------------------
+    # Enable Chrony
+    #
+    # Chrony keeps the system clock synchronized with NTP servers.
+    #
+    # Imagine every Pi slowly drifting a few seconds each day.
+    #
+    # Kubernetes would eventually have certificate validation
+    # problems and logs would become difficult to correlate.
+    #
+    # Chrony prevents this.
+    # --------------------------------------------------------------------------
+
+    - name: Ensure chrony is enabled and running
+      ansible.builtin.service:
+        name: chrony
+        state: started
+        enabled: true
+
+    # --------------------------------------------------------------------------
+    # Disable swap
+    #
+    # Kubernetes requires swap to be disabled.
+    #
+    # Why?
+    #
+    # Kubernetes schedules workloads based on available memory.
+    #
+    # If Linux secretly swaps memory to disk,
+    # Kubernetes no longer has an accurate view of available RAM.
+    #
+    # Therefore Kubernetes officially recommends:
+    #
+    # Swap = OFF
+    # --------------------------------------------------------------------------
+
+    - name: Disable swap
+      ansible.builtin.command: swapoff -a
+      changed_when: false
+
+    # --------------------------------------------------------------------------
+    # Remove swap from fstab
+    #
+    # swapoff disables swap NOW.
+    #
+    # But after reboot...
+    #
+    # Linux would enable swap again.
+    #
+    # Therefore we comment out the swap entry in /etc/fstab.
+    #
+    # Think of this as making the change permanent.
+    # --------------------------------------------------------------------------
+
+    - name: Remove swap entries from fstab
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([^#].*\sswap\s.*)$'
+        replace: '# \1'
+
+    # --------------------------------------------------------------------------
+    # Enable Linux cgroups
+    #
+    # This is one of the most important settings.
+    #
+    # Containers rely on Linux Control Groups (cgroups).
+    #
+    # Cgroups allow Linux to say:
+    #
+    # Container A
+    #   2 CPU
+    #   1 GB RAM
+    #
+    # Container B
+    #   1 CPU
+    #   512 MB RAM
+    #
+    # Without memory cgroups,
+    # Kubernetes cannot properly enforce resource limits.
+    #
+    # Raspberry Pi OS usually needs these kernel parameters enabled.
+    # --------------------------------------------------------------------------
+
+    - name: Enable cgroup memory and cpuset for K3s
+      ansible.builtin.replace:
+        path: /boot/firmware/cmdline.txt
+        regexp: '^(.*)$'
+        replace: '\1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory'
+      register: cmdline_update
+
+    # --------------------------------------------------------------------------
+    # Reboot
+    #
+    # Kernel boot parameters only become active after reboot.
+    #
+    # Ansible is smart enough to:
+    #
+    # 1. reboot the Pi
+    # 2. wait until SSH is available
+    # 3. continue automatically
+    #
+    # We only reboot if cmdline.txt was modified.
+    # --------------------------------------------------------------------------
+
+    - name: Reboot if cmdline changed
+      ansible.builtin.reboot:
+        reboot_timeout: 300
+      when: cmdline_update.changed
