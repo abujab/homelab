@@ -74,6 +74,50 @@
         name: Europe/Berlin
 
     # --------------------------------------------------------------------------
+    # Refresh the APT package cache
+    #
+    # Why?
+    #
+    # Debian-based systems maintain a local catalogue of all available software.
+    #
+    # This cache contains:
+    #
+    #   • Package names
+    #   • Available versions
+    #   • Dependencies
+    #   • Download locations
+    #
+    # It is equivalent to running:
+    #
+    #     sudo apt update
+    #
+    # We separate this from package installation because:
+    #
+    #   1. It makes the playbook easier to understand.
+    #   2. Package installation should only install software.
+    #   3. Cache refresh has its own lifecycle.
+    #
+    # cache_valid_time tells Ansible:
+    #
+    # "If the package cache is less than one hour old,
+    #  don't refresh it again."
+    #
+    # This has several advantages:
+    #
+    #   • Faster playbook execution
+    #   • Less network traffic
+    #   • Cleaner Ansible output
+    #
+    # If we omitted cache_valid_time, every execution would behave like
+    # running "apt update", even when nothing has changed.
+    # --------------------------------------------------------------------------
+
+    - name: Refresh APT package cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    # --------------------------------------------------------------------------
     # Install packages
     #
     # These are our "Swiss Army Knife" utilities.
@@ -111,7 +155,6 @@
           - lsb-release
           - chrony
         state: present
-        update_cache: true
 
     # --------------------------------------------------------------------------
     # Enable Chrony
@@ -176,32 +219,40 @@
     # --------------------------------------------------------------------------
     # Enable Linux cgroups
     #
-    # This is one of the most important settings.
+    # Why?
     #
-    # Containers rely on Linux Control Groups (cgroups).
+    # Kubernetes needs Linux Control Groups to manage CPU and memory limits for
+    # containers.
     #
-    # Cgroups allow Linux to say:
+    # This task is written idempotently:
     #
-    # Container A
-    #   2 CPU
-    #   1 GB RAM
+    #   • If the setting is missing, it adds it.
+    #   • If the setting already exists, it does nothing.
     #
-    # Container B
-    #   1 CPU
-    #   512 MB RAM
-    #
-    # Without memory cgroups,
-    # Kubernetes cannot properly enforce resource limits.
-    #
-    # Raspberry Pi OS usually needs these kernel parameters enabled.
+    # This avoids repeatedly appending the same kernel parameters every time the
+    # playbook is run.
     # --------------------------------------------------------------------------
 
-    - name: Enable cgroup memory and cpuset for K3s
+    - name: Enable cpuset cgroup for K3s
       ansible.builtin.replace:
         path: /boot/firmware/cmdline.txt
-        regexp: '^(.*)$'
-        replace: '\1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory'
-      register: cmdline_update
+        regexp: '^(?!.*\bcgroup_enable=cpuset\b)(.*)$'
+        replace: '\1 cgroup_enable=cpuset'
+      register: cgroup_cpuset_update
+
+    - name: Enable memory cgroup accounting for K3s
+      ansible.builtin.replace:
+        path: /boot/firmware/cmdline.txt
+        regexp: '^(?!.*\bcgroup_memory=1\b)(.*)$'
+        replace: '\1 cgroup_memory=1'
+      register: cgroup_memory_accounting_update
+
+    - name: Enable memory cgroup controller for K3s
+      ansible.builtin.replace:
+        path: /boot/firmware/cmdline.txt
+        regexp: '^(?!.*\bcgroup_enable=memory\b)(.*)$'
+        replace: '\1 cgroup_enable=memory'
+      register: cgroup_memory_controller_update
 
     # --------------------------------------------------------------------------
     # Reboot
@@ -217,7 +268,10 @@
     # We only reboot if cmdline.txt was modified.
     # --------------------------------------------------------------------------
 
-    - name: Reboot if cmdline changed
+    - name: Reboot if kernel command line changed
       ansible.builtin.reboot:
         reboot_timeout: 300
-      when: cmdline_update.changed
+      when: >
+        cgroup_cpuset_update.changed or
+        cgroup_memory_accounting_update.changed or
+        cgroup_memory_controller_update.changed
