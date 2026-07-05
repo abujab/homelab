@@ -1,4 +1,13 @@
-# HomeLab - Private Cloud Platform
+## Documentation
+
+This repository is intentionally documented as an engineering project rather than a collection of scripts.
+
+| Document | Purpose |
+|----------|---------|
+| README.md | Project overview, setup, progress and milestones |
+| ARCHITECTURE.md | Architectural decisions, rationale and technology choices |
+
+The goal is that anyone (including my future self) can understand not only **how** the infrastructure is built, but **why** each design decision was made.# HomeLab - Private Cloud Platform
 
 ## Vision
 
