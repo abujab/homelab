@@ -20,9 +20,24 @@
 # Swap = OFF
 # --------------------------------------------------------------------------
 
-- name: Disable swap
+- name: Disable active swap
   ansible.builtin.command: swapoff -a
   changed_when: false
+
+# --------------------------------------------------------------------------
+# Remove zram swap if present
+#
+# swapoff disables swap NOW.
+#
+# this config switches off zramswap if it exists#
+# --------------------------------------------------------------------------
+
+- name: Disable zram swap service if present
+  ansible.builtin.systemd:
+    name: zramswap.service
+    enabled: false
+    state: stopped
+  failed_when: false  
 
 # --------------------------------------------------------------------------
 # Remove swap from fstab

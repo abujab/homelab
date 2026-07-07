@@ -11,7 +11,7 @@
 # ==============================================================================
 
 - name: Verify swap is disabled
-  ansible.builtin.command: swapon --show
+  ansible.builtin.command: /usr/sbin/swapon --show --noheadings
   register: swap_status
   changed_when: false
   failed_when: swap_status.stdout != ""
@@ -39,6 +39,19 @@
       - "'cgroup_enable=memory' in proc_cmdline.stdout"
     fail_msg: "Required cgroup settings are missing. Reboot may be required."
     success_msg: "Required cgroup settings are active"
+
+- name: Verify cgroup v2 controllers are available
+  ansible.builtin.command: cat /sys/fs/cgroup/cgroup.controllers
+  register: cgroup_controllers
+  changed_when: false
+
+- name: Assert required cgroup controllers are active
+  ansible.builtin.assert:
+    that:
+      - "'memory' in cgroup_controllers.stdout"
+      - "'cpuset' in cgroup_controllers.stdout"
+    fail_msg: "Required cgroup controllers are not available."
+    success_msg: "Required cgroup controllers are available."    
 
 - name: Verify Python is available
   ansible.builtin.command: python3 --version

@@ -10,6 +10,9 @@
 #
 # Kubernetes needs Linux Control Groups to manage CPU and memory limits for
 # containers.
+# 
+# In one of the verify steps we noticed cgroup_disable=memory in the cmdline file
+# so added a step to remove it.  
 #
 # This task is written idempotently:
 #
@@ -19,6 +22,20 @@
 # This avoids repeatedly appending the same kernel parameters every time the
 # playbook is run.
 # --------------------------------------------------------------------------
+
+- name: Remove memory cgroup disable flag
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '(^|\s)cgroup_disable=memory(\s|$)'
+    replace: ' '
+  register: cgroup_disable_memory_removed
+
+- name: Normalize spaces in kernel command line
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '\s+'
+    replace: ' '
+  register: cgroup_cmdline_space_normalized
 
 - name: Enable cpuset cgroup for K3s
   ansible.builtin.replace:
@@ -59,6 +76,8 @@
   ansible.builtin.reboot:
     reboot_timeout: 300
   when: >
+    cgroup_disable_memory_removed.changed or
+    cgroup_cmdline_space_normalized.changed or
     cgroup_cpuset_update.changed or
     cgroup_memory_accounting_update.changed or
     cgroup_memory_controller_update.changed
