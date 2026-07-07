@@ -62,6 +62,7 @@ Negative
 ## References
 
 Red Hat's recommendations
+```
 ansible/
 ├── inventories/
 ├── playbooks/
@@ -69,3 +70,4 @@ ansible/
 ├── collections/
 ├── group_vars/
 └── host_vars/
+```
