@@ -1,0 +1,45 @@
+---
+# ==============================================================================
+# Task file: swap.yml
+#
+# Purpose
+# -------
+# Disable swap
+#
+# Kubernetes requires swap to be disabled.
+#
+# Why?
+#
+# Kubernetes schedules workloads based on available memory.
+#
+# If Linux secretly swaps memory to disk,
+# Kubernetes no longer has an accurate view of available RAM.
+#
+# Therefore Kubernetes officially recommends:
+#
+# Swap = OFF
+# --------------------------------------------------------------------------
+
+- name: Disable swap
+  ansible.builtin.command: swapoff -a
+  changed_when: false
+
+# --------------------------------------------------------------------------
+# Remove swap from fstab
+#
+# swapoff disables swap NOW.
+#
+# But after reboot...
+#
+# Linux would enable swap again.
+#
+# Therefore we comment out the swap entry in /etc/fstab.
+#
+# Think of this as making the change permanent.
+# --------------------------------------------------------------------------
+
+- name: Remove swap entries from fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\sswap\s.*)$'
+    replace: '# \1'

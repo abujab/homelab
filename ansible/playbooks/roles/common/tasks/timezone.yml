@@ -1,0 +1,19 @@
+---
+# ==============================================================================
+# Task file: timezone.yml
+#
+# Purpose
+# -------
+# Ensure all Raspberry Pi nodes use the same timezone.
+#
+# Why?
+# ----
+# Consistent timezone configuration makes logs, monitoring dashboards,
+# Kubernetes events and troubleshooting easier to correlate.
+#
+# The home lab is located in Germany, so Europe/Berlin is used.
+# --------------------------------------------------------------------------
+
+- name: Set timezone to Europe/Berlin
+  community.general.timezone:
+    name: Europe/Berlin

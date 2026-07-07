@@ -1,0 +1,22 @@
+---
+# ==============================================================================
+# Task file: chrony.yml
+#
+# Purpose
+# -------
+#
+# Chrony keeps the system clock synchronized with NTP servers.
+#
+# Imagine every Pi slowly drifting a few seconds each day.
+#
+# Kubernetes would eventually have certificate validation
+# problems and logs would become difficult to correlate.
+#
+# Chrony prevents this.
+# --------------------------------------------------------------------------
+
+- name: Ensure chrony is enabled and running
+  ansible.builtin.service:
+    name: chrony
+    state: started
+    enabled: true

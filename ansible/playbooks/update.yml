@@ -1,17 +1,46 @@
 ---
+# ==============================================================================
+# Playbook: update.yml
+#
+# Purpose
+# -------
+# Update operating system packages on all Raspberry Pi nodes.
+#
+# This is the safe maintenance playbook we can run regularly.
+#
+# It performs the equivalent of:
+#
+#   sudo apt update
+#   sudo apt full-upgrade
+#   sudo apt autoremove
+#
+# but across the whole cluster.
+# ==============================================================================
+
 - name: Update Raspberry Pi nodes
   hosts: pis
   become: true
 
   tasks:
+
+    # Refresh the local package index.
+    #
+    # Without this, apt may not know about the latest package versions.
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true
 
+    # Upgrade installed packages.
+    #
+    # "dist" is similar to apt full-upgrade. It allows apt to intelligently handle
+    # dependency changes when packages require them.
     - name: Upgrade packages
       ansible.builtin.apt:
         upgrade: dist
 
+    # Remove packages that were installed as dependencies but are no longer needed.
+    #
+    # This keeps the nodes cleaner over time.
     - name: Autoremove unused packages
       ansible.builtin.apt:
         autoremove: true

@@ -1,0 +1,89 @@
+---
+# ==============================================================================
+# Task file: packages.yml
+## --------------------------------------------------------------------------
+# Refresh the APT package cache
+#
+# Why?
+#
+# Debian-based systems maintain a local catalogue of all available software.
+#
+# This cache contains:
+#
+#   • Package names
+#   • Available versions
+#   • Dependencies
+#   • Download locations
+#
+# It is equivalent to running:
+#
+# sudo apt update
+#
+# We separate this from package installation because:
+#
+#   1. It makes the playbook easier to understand.
+#   2. Package installation should only install software.
+#   3. Cache refresh has its own lifecycle.
+#
+# cache_valid_time tells Ansible:
+#
+# "If the package cache is less than one hour old,
+#  don't refresh it again."
+#
+# This has several advantages:
+#
+#   • Faster playbook execution
+#   • Less network traffic
+#   • Cleaner Ansible output
+#
+# If we omitted cache_valid_time, every execution would behave like
+# running "apt update", even when nothing has changed.
+# --------------------------------------------------------------------------
+
+- name: Refresh APT package cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+# --------------------------------------------------------------------------
+# Install packages
+#
+# These are our "Swiss Army Knife" utilities.
+#
+# curl-> Call REST APIs
+# wget-> Download files
+# git -> Source control
+# vim -> Editor
+# htop-> Better task manager
+# net-tools   -> ifconfig, netstat
+# dnsutils-> dig, nslookup
+# ca-certificates -> package that contains certificates provided by the Certificate Authorities
+# lsb-release -> The lsb_release command is a utility that reads the LSB release information from a specific file on the system 
+#(usually /etc/lsb-release or other related files). It then presents this information in a user-friendly format, allowing users to 
+#quickly identify the distribution they are using and its version details.
+# chrony  -> Time synchronization
+#
+# Kubernetes nodes rely on accurate clocks.
+#
+# Certificates
+# Tokens
+# Logs
+#
+# all depend on synchronized time.
+# --------------------------------------------------------------------------
+
+- name: Install baseline packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - git
+      - vim
+      - htop
+      - net-tools
+      - dnsutils
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - chrony
+    state: present

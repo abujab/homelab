@@ -1,0 +1,15 @@
+---
+# ==============================================================================
+# Role: common
+#
+# Purpose
+# -------
+# Apply the shared baseline configuration required on every node.
+# ==============================================================================
+
+- import_tasks: timezone.yml
+- import_tasks: packages.yml
+- import_tasks: chrony.yml
+- import_tasks: swap.yml
+- import_tasks: cgroups.yml
+- import_tasks: verify.yml

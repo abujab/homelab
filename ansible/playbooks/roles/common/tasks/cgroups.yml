@@ -1,0 +1,64 @@
+---
+# ==============================================================================
+# Task file: cgroups.yml
+#
+# Purpose
+# -------
+# Enable Linux cgroups
+#
+# Why?
+#
+# Kubernetes needs Linux Control Groups to manage CPU and memory limits for
+# containers.
+#
+# This task is written idempotently:
+#
+#   • If the setting is missing, it adds it.
+#   • If the setting already exists, it does nothing.
+#
+# This avoids repeatedly appending the same kernel parameters every time the
+# playbook is run.
+# --------------------------------------------------------------------------
+
+- name: Enable cpuset cgroup for K3s
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '^(?!.*\bcgroup_enable=cpuset\b)(.*)$'
+    replace: '\1 cgroup_enable=cpuset'
+  register: cgroup_cpuset_update
+
+- name: Enable memory cgroup accounting for K3s
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '^(?!.*\bcgroup_memory=1\b)(.*)$'
+    replace: '\1 cgroup_memory=1'
+  register: cgroup_memory_accounting_update
+
+- name: Enable memory cgroup controller for K3s
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '^(?!.*\bcgroup_enable=memory\b)(.*)$'
+    replace: '\1 cgroup_enable=memory'
+  register: cgroup_memory_controller_update
+
+# --------------------------------------------------------------------------
+# Reboot
+#
+# Kernel boot parameters only become active after reboot.
+#
+# Ansible is smart enough to:
+#
+# 1. reboot the Pi
+# 2. wait until SSH is available
+# 3. continue automatically
+#
+# We only reboot if cmdline.txt was modified.
+# --------------------------------------------------------------------------
+
+- name: Reboot if kernel command line changed
+  ansible.builtin.reboot:
+    reboot_timeout: 300
+  when: >
+    cgroup_cpuset_update.changed or
+    cgroup_memory_accounting_update.changed or
+    cgroup_memory_controller_update.changed
