@@ -81,7 +81,7 @@
       - vim
       - htop
       - net-tools
-      - dnsutils
+      - bind9-dnsutils
       - ca-certificates
       - gnupg
       - lsb-release
