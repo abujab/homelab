@@ -1,0 +1,18 @@
+---
+# ==============================================================================
+# Playbook: k3s.yml
+#
+# Purpose
+# -------
+# Install Kubernetes using K3s.
+#
+# pi4mB01 becomes the control-plane node.
+# pi4mB02, pi4mB03 and pi4mB04 join as worker nodes.
+# ==============================================================================
+
+- name: Install K3s cluster
+  hosts: pis
+  become: true
+
+  roles:
+    - k3s

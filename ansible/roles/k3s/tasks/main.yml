@@ -1,0 +1,27 @@
+---
+# ==============================================================================
+# Role: k3s
+# File: tasks/main.yml
+#
+# Purpose
+# -------
+# Orchestrate K3s installation by delegating to smaller task files.
+#
+# This file does not contain implementation details. It only decides which
+# task files run on which type of node.
+# ==============================================================================
+
+- import_tasks: install_server.yml
+  when: inventory_hostname in groups['k3s_server']
+
+- import_tasks: install_agents.yml
+  when: inventory_hostname in groups['k3s_agents']
+
+- import_tasks: configure_kubeconfig.yml
+  when: inventory_hostname in groups['k3s_server']
+
+- import_tasks: label_nodes.yml
+  when: inventory_hostname in groups['k3s_server']
+
+- import_tasks: verify_cluster.yml
+  when: inventory_hostname in groups['k3s_server']

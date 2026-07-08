@@ -1,0 +1,89 @@
+---
+# ==============================================================================
+# Task file: verify_cluster.yml
+#
+# Purpose
+# -------
+# Verify that the K3s cluster has been installed successfully.
+#
+# These checks validate the end state of the cluster rather than modifying it.
+#
+# Why?
+# ----
+# Successful installation of the K3s packages does not necessarily mean the
+# cluster is healthy. These checks ensure the Kubernetes API is reachable,
+# nodes have joined the cluster, and essential system workloads are running.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Verify the K3s service is running
+# ------------------------------------------------------------------------------
+
+- name: Gather service information
+  ansible.builtin.service_facts:
+
+- name: Assert K3s service is running
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.services['k3s.service'].state == "running"
+    fail_msg: "K3s service is not running."
+    success_msg: "K3s service is running."
+
+# ------------------------------------------------------------------------------
+# Verify Kubernetes nodes
+# ------------------------------------------------------------------------------
+
+- name: Get Kubernetes nodes
+  ansible.builtin.command:
+    cmd: kubectl get nodes --no-headers
+  register: kubectl_nodes
+  changed_when: false
+
+- name: Assert all nodes joined the cluster
+  ansible.builtin.assert:
+    that:
+      - kubectl_nodes.stdout_lines | length == groups['pis'] | length
+    fail_msg: "Not all nodes have joined the Kubernetes cluster."
+    success_msg: "All nodes have joined the Kubernetes cluster."
+
+# ------------------------------------------------------------------------------
+# Verify CoreDNS
+# ------------------------------------------------------------------------------
+
+- name: Get CoreDNS status
+  ansible.builtin.command:
+    cmd: kubectl get pods -n kube-system -l k8s-app=kube-dns --no-headers
+  register: coredns_status
+  changed_when: false
+
+- name: Assert CoreDNS is running
+  ansible.builtin.assert:
+    that:
+      - "'Running' in coredns_status.stdout"
+    fail_msg: "CoreDNS is not running."
+    success_msg: "CoreDNS is running."
+
+# ------------------------------------------------------------------------------
+# Verify Metrics Server
+# ------------------------------------------------------------------------------
+
+- name: Get Metrics Server status
+  ansible.builtin.command:
+    cmd: kubectl get deployment metrics-server -n kube-system --no-headers
+  register: metrics_status
+  changed_when: false
+
+- name: Assert Metrics Server is available
+  ansible.builtin.assert:
+    that:
+      - "'1/1' in metrics_status.stdout"
+    fail_msg: "Metrics Server is not available."
+    success_msg: "Metrics Server is available."
+
+# ------------------------------------------------------------------------------
+# Display cluster summary
+# ------------------------------------------------------------------------------
+
+- name: Display cluster nodes
+  ansible.builtin.debug:
+    msg: "{{ kubectl_nodes.stdout_lines }}"

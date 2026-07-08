@@ -1,0 +1,35 @@
+---
+# ==============================================================================
+# Task file: server.yml
+#
+# Purpose
+# -------
+# Install the first K3s server node.
+#
+# This node becomes the Kubernetes control plane. It hosts the Kubernetes API
+# server and coordinates the worker nodes.
+# ==============================================================================
+
+- name: Install K3s server
+  ansible.builtin.shell: |
+    curl -sfL https://get.k3s.io | sh -s - server \
+      --write-kubeconfig-mode 644 \
+      --disable servicelb \
+      --disable traefik
+  args:
+    creates: /etc/systemd/system/k3s.service
+
+- name: Ensure K3s server is running
+  ansible.builtin.systemd:
+    name: k3s
+    state: started
+    enabled: true
+
+- name: Read K3s node join token
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_node_token
+
+- name: Store K3s node token for worker joins
+  ansible.builtin.set_fact:
+    k3s_token: "{{ k3s_node_token.content | b64decode | trim }}"
