@@ -52,3 +52,10 @@ nav:
       - Architecture: overview/architecture.md
       - Repository: overview/repository.md
       - Roadmap: overview/roadmap.md
+  - Infrastructure:
+      - Raspberry Pi Cluster: infrastructure/raspberry-pi-cluster.md
+      - Ansible: infrastructure/ansible.md
+      - Kubernetes: infrastructure/kubernetes.md
+      - Networking: infrastructure/networking.md
+      - Storage: infrastructure/storage.md
+      - Security: infrastructure/security.md
