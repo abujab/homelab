@@ -1,6 +1,9 @@
+
 site_name: Abdul's HomeLab
-site_description: Private cloud and hybrid homelab platform
-repo_url: https://github.com/abujab/homelab
+site_description: Enterprise-inspired private cloud and hybrid homelab platform
+site_author: Abdul Jabbar
+repo_url: https://github.com/<your-user>/<your-repo>
+repo_name: homelab
 
 theme:
   name: material
@@ -8,25 +11,44 @@ theme:
     - navigation.sections
     - navigation.expand
     - navigation.top
+    - navigation.instant
+    - navigation.tracking
     - search.highlight
+    - search.suggest
     - content.code.copy
+    - content.code.select
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
 
 nav:
   - Home: index.md
-  - Architecture:
-      - Overview: architecture/overview.md
-      - Network: architecture/network.md
-      - Kubernetes: architecture/kubernetes.md
-  - ADRs:
-      - ADR nnnn - ADR-template: adr/ADR-template.md
-      - ADR 0001 - Operating System: adr/ADR-0001-operating-system.md
-      - ADR 0002 - Configuration Management: adr/ADR-0002-configuration-management.md
-      - ADR 0003 - Kubernetes distribution: adr/ADR-0003-kubernetes-distribution.md
-      - ADR 0004 - Storage: adr/ADR-0004-storage.md
-      - ADR 0005 - GitOps: adr/ADR-0005-gitops.md
-      - ADR 0006 - Repository Structure: adr/ADR-0006-repository-structure.md      
-      - ADR 0007 - Target Architecture: adr/ADR-0007-homelab-target-architecture.md
-  - Runbooks:
-      - Rebuild Node: runbooks/rebuild-node.md
-      - Update Cluster: runbooks/update-cluster.md
-      - Troubleshoot K3s: runbooks/troubleshoot-k3s.md
+  - Overview:
+      - Vision: overview/vision.md
+      - Architecture: overview/architecture.md
+      - Repository: overview/repository.md
+      - Roadmap: overview/roadmap.md
