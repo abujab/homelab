@@ -191,11 +191,11 @@ Updated after every completed sprint.
 
 ---
 
-WORK_ORDER.md
+work-orders/CURRENT.md
 
 Current implementation sprint.
 
-Only one work order should exist at any time.
+Completed work orders are archived in `work-orders/` using their work order ID.
 
 ---
 
@@ -298,7 +298,7 @@ Every sprint follows this lifecycle.
 
 1. Read PROJECT_STATE.md
 
-2. Read WORK_ORDER.md
+2. Read work-orders/CURRENT.md
 
 3. Review relevant ADRs
 

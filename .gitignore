@@ -7,3 +7,7 @@ __pycache__/
 
 # MkDocs build output
 site/
+
+# Editor workspace files
+*.sublime-project
+*.sublime-workspace

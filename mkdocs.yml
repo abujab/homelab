@@ -2,8 +2,8 @@
 site_name: Abdul's HomeLab
 site_description: Enterprise-inspired private cloud and hybrid homelab platform
 site_author: Abdul Jabbar
-repo_url: https://github.com/<your-user>/<your-repo>
-repo_name: homelab
+repo_url: https://github.com/abujab/homelab
+repo_name: abujab/homelab
 
 theme:
   name: material
@@ -59,3 +59,9 @@ nav:
       - Networking: infrastructure/networking.md
       - Storage: infrastructure/storage.md
       - Security: infrastructure/security.md
+  - Operations:
+      - Bootstrap: operations/bootstrap.md
+      - Updating: operations/updating.md
+      - Rebuilding: operations/rebuilding.md
+      - Troubleshooting: operations/troubleshooting.md
+      - Backup: operations/backup.md

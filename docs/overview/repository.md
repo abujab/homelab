@@ -45,7 +45,7 @@ homelab/
 ├── README.md
 ├── mkdocs.yml
 ├── PROJECT_STATE.md
-├── WORK_ORDER.md
+├── work-orders/
 ├── ansible/
 ├── kubernetes/
 ├── docs/
@@ -65,9 +65,23 @@ Current state of the project.
 
 This file changes after sprint completion.
 
-### `WORK_ORDER.md`
+### `work-orders/`
 
-Current implementation work package.
+Current and archived implementation work packages.
+
+The active sprint is described in:
+
+```text
+work-orders/CURRENT.md
+```
+
+When no sprint is active, `CURRENT.md` may be absent.
+
+Completed work orders are archived by ID, for example:
+
+```text
+work-orders/WO-1002-documentation-infrastructure.md
+```
 
 This file changes when a new sprint starts.
 
@@ -122,11 +136,9 @@ Current structure:
 ```text
 docs/
 ├── index.md
-└── overview/
-    ├── vision.md
-    ├── architecture.md
-    ├── repository.md
-    └── roadmap.md
+├── overview/
+├── infrastructure/
+└── operations/
 ```
 
 ### `kubernetes/`
@@ -153,9 +165,11 @@ Roles are first-class reusable implementation units, not subfolders of playbooks
 
 Documentation evolves with the infrastructure and is version controlled.
 
-### Work order and project state are separate
+### Work orders and project state are separate
 
-`WORK_ORDER.md` describes what is being done next.
+`work-orders/CURRENT.md` describes what is being done next.
+
+Archived work orders describe completed implementation history.
 
 `PROJECT_STATE.md` describes what is true now.
 
@@ -173,7 +187,8 @@ When adding new files:
 - avoid mixing architecture and operations in the same document
 - update `mkdocs.yml` when adding documentation pages
 - update `PROJECT_STATE.md` at the end of a sprint
-- update `WORK_ORDER.md` at the beginning of a sprint
+- update `work-orders/CURRENT.md` at the beginning of a sprint
+- archive completed work orders under `work-orders/`
 - do not duplicate stable reference data in many places
 
 ---

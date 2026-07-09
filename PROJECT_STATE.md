@@ -9,7 +9,7 @@
 
 ## Current Platform State
 
-HomeLab has completed its first three engineering implementation sprints and the first two documentation sprints.
+HomeLab has completed its first three engineering implementation sprints and the first three documentation sprints.
 
 The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster managed through Ansible and documented through MkDocs Material.
 
@@ -84,6 +84,20 @@ Completed:
 - docs/infrastructure/security.md created
 - mkdocs.yml navigation updated with Infrastructure section
 
+### Documentation Sprint 3 — Operations Foundation
+
+Status: Complete
+
+Completed:
+
+- docs/operations/bootstrap.md created
+- docs/operations/updating.md created
+- docs/operations/rebuilding.md created
+- docs/operations/troubleshooting.md created
+- docs/operations/backup.md created
+- mkdocs.yml navigation updated with Operations section
+- work order workflow moved to work-orders/CURRENT.md with completed work orders archived by ID
+
 ---
 
 ## Current Infrastructure
@@ -118,10 +132,16 @@ Completed sections:
 - Networking
 - Storage
 - Security
+- Operations
+- Bootstrap
+- Updating
+- Rebuilding
+- Troubleshooting
+- Backup
 
 Next documentation area:
 
-- Operations or networking foundation documentation
+- Reference documentation
 
 ---
 
@@ -131,12 +151,12 @@ No blocking technical risks identified.
 
 Known documentation risk:
 
-- Some implementation knowledge remains in role task comments and should continue to be consolidated into MkDocs pages as future sprints add platform capabilities.
+- Reference data such as inventory, naming, IP addressing and software versions should be consolidated in the planned reference documentation sprint.
 
 ---
 
 ## Next Work Package
 
-To be defined when the next `WORK_ORDER.md` is prepared.
+Documentation Sprint 4 — Reference Documentation.
 
-See `WORK_ORDER.md`.
+Create `work-orders/CURRENT.md` when the next work order is prepared.

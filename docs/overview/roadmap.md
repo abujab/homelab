@@ -15,7 +15,7 @@ It gives structure to future work and prevents the platform from growing randoml
 
 This roadmap covers major platform phases.
 
-It does not replace `WORK_ORDER.md`. The roadmap describes long-term direction. `WORK_ORDER.md` describes the current sprint.
+It does not replace `work-orders/CURRENT.md`. The roadmap describes long-term direction. `work-orders/CURRENT.md` describes the current sprint.
 
 ---
 
