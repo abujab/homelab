@@ -29,6 +29,36 @@ while remaining:
 
 The platform should resemble a miniature production environment rather than a collection of individual Raspberry Pis.
 
+```
+                         Internet
+                             │
+                        ISP Router
+                             │
+                ┌────────────┴─────────────┐
+                │                          │
+         Management Network          WiFi Clients
+                │
+        ┌───────┴─────────────────────────────────────────────┐
+        │                                                     │
+   Raspberry Pi Cluster                                 x86 Cluster
+  (Always-on services)                              (Heavy workloads)
+        │                                                     │
+ pi4mB01  Control Plane                              Dell 5591
+ pi4mB02  Worker                                     ThinkPad
+ pi4mB03  Worker                                     HP Laptop
+ pi4mB04  Worker                                     ...
+        │                                                     │
+        └────────────── Kubernetes (single cluster) ──────────┘
+                              │
+                    MetalLB + Ingress + DNS
+                              │
+        grafana.home.arpa
+        git.home.arpa
+        elm.home.arpa
+        ollama.home.arpa
+        registry.home.arpa
+```
+
 ---
 
 # Design Principles

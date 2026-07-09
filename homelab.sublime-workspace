@@ -1,0 +1,353 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"ca",
+				"cacerts"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "docs/adr/ADR-0003-kubernetes-distribution.md",
+			"settings":
+			{
+				"buffer_size": 792,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"Package Control: ",
+				"Package Control: List Packages"
+			],
+			[
+				"",
+				"Package Control: List Packages"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/abdul/Development/playGround/homelab",
+		"/home/abdul/Development/playGround/homelab/docs",
+		"/home/abdul/Development/playGround/homelab/docs/adr"
+	],
+	"file_history":
+	[
+		"/home/abdul/Development/playGround/homelab/docs/architecture/ARCHITECTURE.md",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/k3s/tasks/label_nodes.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/k3s/tasks/main.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/ansible.cfg",
+		"/home/abdul/Development/playGround/homelab/ansible/playbooks/k3s.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/k3s/tasks/verify_cluster.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/k3s/tasks/labels.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/common/tasks/packages.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/k3s/tasks/kubeconfig.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/k3s/tasks/server.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/k3s/tasks/agent.yml",
+		"/home/abdul/Development/playGround/homelab/docs/adr/ADR-0001-operating-system.md",
+		"/home/abdul/Development/playGround/homelab/ARCHITECTURE.md",
+		"/home/abdul/Development/playGround/homelab/docs/adr/ADR-0006-repository-structure.md",
+		"/home/abdul/Development/playGround/homelab/ansible/playbooks/baseline.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/common/tasks/swap.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/common/tasks/cgroups.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/common/tasks/verify.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/common/tasks/main.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/common/tasks/timezone.yml",
+		"/home/abdul/Development/playGround/homelab/ansible/roles/common/tasks/chrony.yml",
+		"/home/abdul/Desktop/33xSymphonyImprovements",
+		"/home/abdul/DevelopmentG2/source/components/kpmGSB/cleanUpP12.txt",
+		"/home/abdul/Apps/agosense_symphony/agosense.symphony.app.service.vmoptions",
+		"/tmp/mozilla_abdul0/agosense.symphony.error.log",
+		"/tmp/.fr-NIwREo/src/main/java/com/agosense/symphony/adapter/sample/adapter/frame/ApiImpl.java",
+		"/tmp/.fr-8WHGHf/src/main/java/com/agosense/symphony/adapter/sample/adapter/frame/Session.java",
+		"/home/abdul/DevelopmentG2/bpel/TRW/IntegrityAsam/pAsam2Integrity/src/Asam.wsdl",
+		"/home/abdul/DevelopmentG2/bpel/TRW/IntegrityAsam/pAsam2Integrity/src/Execute.bpel",
+		"/home/abdul/DevelopmentG2/bpel/TRW/IntegrityAsam/pAsam2Integrity/src/Scoping.bpel",
+		"/home/abdul/Desktop/openIssuesAndreas",
+		"/home/abdul/SmartBear/SoapUI-5.6.0/.install4j/installation.log",
+		"/home/abdul/.m2/settings_customer.xml",
+		"/home/abdul/.m2/settings.xml",
+		"/home/abdul/Desktop/Exception.txt",
+		"/home/abdul/Desktop/viewIssueResponse",
+		"/home/abdul/Downloads/meetingAttendanceReport.csv",
+		"/home/abdul/Desktop/categories.xml",
+		"/home/abdul/Apps/symphony/agosense.symphony.service.vmoptions",
+		"/home/abdul/Desktop/SoapUI 5.6.0.desktop",
+		"/home/abdul/Desktop/clientBean",
+		"/tmp/.fr-2zVmLQ/META-INF/MANIFEST.MF",
+		"/tmp/.fr-DLDsO3/META-INF/MANIFEST.MF",
+		"/home/abdul/Apps/agosense_symphony/conf/bundles/symphony.version",
+		"/home/abdul/Desktop/cooking/broccoliFry",
+		"/home/abdul/Desktop/cooking/kathirikkaiThokku",
+		"/home/abdul/SmartBear/SoapUI-5.6.0/.install4j/files.log",
+		"/home/abdul/SmartBear/SoapUI-5.6.0/bin/soapui.sh",
+		"/home/abdul/SmartBear/SoapUI-5.6.0/bin/SoapUI-5.6.0",
+		"/tmp/.fr-Zgg8n0/META-INF/MANIFEST.MF",
+		"/home/abdul/Desktop/cooking/arachuvitaSambar",
+		"/home/abdul/Desktop/cooking/basicGravyPaste",
+		"/home/abdul/Desktop/cooking/PaneerButterMasala",
+		"/home/abdul/Downloads/yubikey-personalization-gui-3.1.25/README",
+		"/home/abdul/Desktop/cooking/fryMasala",
+		"/home/abdul/Desktop/cooking/vendakaiPuliKulambu",
+		"/home/abdul/Desktop/cooking/murungaKeeraiKulambu",
+		"/home/abdul/Desktop/trip",
+		"/home/abdul/DevelopmentG2/bpel/TRW/IntegrityTaeesi/ZFBMWIntegrity2Taeesi-0.0.7/ZFBMWIntegrity2Taeesi/agosense.xsd",
+		"/home/abdul/Desktop/fryMasala",
+		"/home/abdul/Desktop/arachuvitaSambar",
+		"/home/abdul/DevelopmentG2/source/components/starc/IncreasingLogs",
+		"/tmp/mozilla_abdul0/Exception.txt",
+		"/tmp/mozilla_abdul0/Exception-1.txt",
+		"/home/abdul/DevelopmentG2/javaProcesses/agosense/testInvalidate/src/main/java/com/agosense/symphony/process/agosense/testInvalidate/TestInvalidateProcess.java",
+		"/home/abdul/DevelopmentG2/javaProcesses/agosense/testInvalidate/src/main/java/com/agosense/symphony/process/agosense/testInvalidate/TestInvalidateProcessCfgI.java",
+		"/home/abdul/DevelopmentG2/javaProcesses/agosense/testInvalidate/pom.xml",
+		"/tmp/.fr-DK7fQX/META-INF/MANIFEST.MF",
+		"/home/abdul/Documents/RDPShare/Nextcloud/Documents/Personal/EuropeTamilargal/slideDeckChangesPR_Expert",
+		"/home/abdul/Documents/RDPShare/Nextcloud/Documents/Personal/EuropeTamilargal/websitePass",
+		"/home/abdul/DevelopmentG2/source/symphony/migrator/manual.html",
+		"/home/abdul/DevelopmentG2/source/components/taeesi/taeesi.txt",
+		"/home/abdul/Documents/abc.txt",
+		"/home/abdul/Apps/agosense_symphony_docker/3.3.1/conf/logback.xml",
+		"/home/abdul/Apps/agosense_symphony_docker/3.3.1/start.sh",
+		"/home/abdul/Documents/RDPShare/Nextcloud/Documents/Personal/EuropeTamilargal/FriendsDetails",
+		"/home/abdul/Desktop/VideoEnCotentBigFM",
+		"/home/abdul/Documents/RDPShare/Nextcloud/Documents/Personal/EuropeTamilargal/FAQ",
+		"/home/abdul/Documents/Bosch/RTCRTC/SupportPackage/configuration\\logs\\agosense.symphony.output.log",
+		"/etc/krb5.conf",
+		"/home/abdul/Documents/Visteon/starc_log/agosense-2021-02-25_09.1.log",
+		"/home/abdul/Documents/RDPShare/GTS_logo/videoEditing",
+		"/tmp/mozilla_abdul0/ExecuteError.txt",
+		"/home/abdul/Desktop/BOSCH_Training.xml",
+		"/home/abdul/Apps/agosense_symphony_docker/3.3.0/start.sh",
+		"/home/abdul/Desktop/agosense-2021-04-06_14.0.log",
+		"/home/abdul/Documents/Visteon/kpmGSB/23_april_log/agosense-2021-04-23_03.0.log",
+		"/home/abdul/DevelopmentG2/Client.wsdl",
+		"/home/abdul/Documents/Visteon/kpmGSB/agosense-2021-04-13_12.0.log",
+		"/home/abdul/Documents/Visteon/ramaJayam",
+		"/home/abdul/Documents/RDPShare/Nextcloud/Documents/Personal/h_da/MasterThesisReportAbdul.pdf",
+		"/tmp/mozilla_abdul0/Exception-3.txt",
+		"/tmp/mozilla_abdul0/Exception-4.txt",
+		"/tmp/mozilla_abdul0/Exception-2.txt",
+		"/home/abdul/Desktop/pointToTheHindu",
+		"/home/abdul/Documents/RDPShare/Nextcloud/Documents/Personal/EuropeTamilargal/ChineseFundings/website",
+		"/home/abdul/Documents/RDPShare/Nextcloud/Documents/Personal/EuropeTamilargal/GMT20210220-180643_ET-opening.txt",
+		"/home/abdul/Documents/Bosch/RTCRTC/SupportPackage/configuration\\logs\\agosense-2021-02-17_10.0.log",
+		"/home/abdul/Documents/Bosch/RTCRTC/SupportPackage/configuration\\logs\\agosense.symphony.error.log",
+		"/home/abdul/Apps/agosense_symphony_docker/cmds",
+		"/home/abdul/Desktop/octane",
+		"/tmp/mozilla_abdul0/response_1612183644025.json",
+		"/home/abdul/.m2/repository/com/agosense/pom/process/4.6.13/process-4.6.13.pom",
+		"/home/abdul/DevelopmentG2/javaProcesses/zf/starcDefect2integrity/src/main/java/com/zf/symphony/process/agosense/starcDefect2integrity/StarcDefect2IntegrityConfigI.java",
+		"/home/abdul/DevelopmentG2/javaProcesses/zf/starcDefect2integrity/pom.xml",
+		"/home/abdul/DevelopmentG2/javaProcesses/zf/starcDefect2integrity/src/main/java/com/zf/symphony/process/agosense/starcDefect2integrity/StarcDefect2IntegrityProcess.java",
+		"/tmp/.fr-jzj0JZ/META-INF/MANIFEST.MF",
+		"/tmp/.fr-CJdCly/META-INF/MANIFEST.MF",
+		"/home/abdul/Documents/RDPShare/GTS_logo/Pitch.pdf:Zone.Identifier:$DATA",
+		"/home/abdul/Apps/agosense_symphony/conf/bundles/com.agosense.nucleus.http.cfg",
+		"/home/abdul/DevelopmentG2/javaProcesses/training/training/src/main/java/com/agosense/symphony/process/agosense/training/TrainingProcess.java",
+		"/home/abdul/DevelopmentG2/javaProcesses/zf/starc2IntegrityMissingDanTe/pom.xml",
+		"/home/abdul/DevelopmentG2/javaProcesses/zf/starcCRLDEV2integrity/pom.xml",
+		"/home/abdul/DevelopmentG2/javaProcesses/zf/starc2IntegrityMissingDanTe/src/main/java/com/agosense/symphony/process/starc2IntegrityMissingDanTe/Starc2IntegrityMissingDanTe.java",
+		"/home/abdul/DevelopmentG2/javaProcesses/zf/starc2IntegrityMissingDanTe/src/main/java/com/agosense/symphony/process/starc2IntegrityMissingDanTe/Starc2IntegrityMissingDanTeProcess.java",
+		"/tmp/.fr-e8Zqu6/META-INF/MANIFEST.MF",
+		"/tmp/.fr-cgkl87/META-INF/MANIFEST.MF",
+		"/tmp/mozilla_abdul0/response_1611873884007.json",
+		"/tmp/.fr-wSFtX7/META-INF/MANIFEST.MF",
+		"/tmp/.fr-bYhNE6/META-INF/MANIFEST.MF",
+		"/tmp/.fr-XYhHM6/META-INF/MANIFEST.MF",
+		"/tmp/.fr-CIXWGd/META-INF/MANIFEST.MF",
+		"/home/abdul/Desktop/pingError330",
+		"/home/abdul/Apps/agosense_symphony_docker/dev/docker-entrypoint-dev.sh",
+		"/home/abdul/.m2/repository/com/agosense/pom/jbi/4.6.45/jbi-4.6.45.pom",
+		"/tmp/mozilla_abdul0/correctFormat.json",
+		"/tmp/.fr-OMBheK/jaxb.properties",
+		"/home/abdul/Apps/agosense_symphony_docker/docker-entrypoint-dev.sh"
+	],
+	"find":
+	{
+		"height": 28.0
+	},
+	"find_in_files":
+	{
+		"height": 280.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"scrollbar_highlights": true,
+		"show_context": true,
+		"use_buffer2": true,
+		"use_gitignore": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "docs/adr/ADR-0003-kubernetes-distribution.md",
+					"selected": true,
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 792,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"stack_multiselect": false,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 28.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 367.0,
+		"history":
+		[
+		]
+	},
+	"pinned_build_system": "",
+	"project": "homelab.sublime-project",
+	"replace":
+	{
+		"height": 52.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 313.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

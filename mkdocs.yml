@@ -1,0 +1,32 @@
+site_name: Abdul's HomeLab
+site_description: Private cloud and hybrid homelab platform
+repo_url: https://github.com/abujab/homelab
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Network: architecture/network.md
+      - Kubernetes: architecture/kubernetes.md
+  - ADRs:
+      - ADR nnnn - ADR-template: adr/ADR-template.md
+      - ADR 0001 - Operating System: adr/ADR-0001-operating-system.md
+      - ADR 0002 - Configuration Management: adr/ADR-0002-configuration-management.md
+      - ADR 0003 - Kubernetes distribution: adr/ADR-0003-kubernetes-distribution.md
+      - ADR 0004 - Storage: adr/ADR-0004-storage.md
+      - ADR 0005 - GitOps: adr/ADR-0005-gitops.md
+      - ADR 0006 - Repository Structure: adr/ADR-0006-repository-structure.md      
+      - ADR 0007 - Target Architecture: adr/ADR-0007-homelab-target-architecture.md
+  - Runbooks:
+      - Rebuild Node: runbooks/rebuild-node.md
+      - Update Cluster: runbooks/update-cluster.md
+      - Troubleshoot K3s: runbooks/troubleshoot-k3s.md
