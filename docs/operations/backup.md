@@ -22,6 +22,7 @@ This document covers:
 - secrets
 - cluster configuration
 - Kubernetes manifests
+- Pi-hole persistent configuration
 - recovery priorities
 - recovery objectives
 
@@ -107,8 +108,10 @@ The following are not yet fully backed up by an implemented platform backup syst
 - K3s server state
 - Kubernetes persistent volumes
 - Kubernetes secrets
+- Pi-hole administrative password Secret
 - future application data
 - future Longhorn volumes
+- Pi-hole persistent configuration restore
 - router DHCP reservation configuration
 - operator SSH private key
 
@@ -142,6 +145,8 @@ If Longhorn is adopted, backup design should include:
 
 Secrets are not currently managed by a dedicated secrets platform.
 
+The Pi-hole administrative password Secret is created locally and is not committed to Git.
+
 Future design must define:
 
 - where secrets are stored
@@ -167,6 +172,16 @@ The `kubernetes/` and `manifests/` directories are currently reserved for future
 
 When platform services are added, manifests should be committed and documented as part of the recovery model.
 
+The current networking manifests under `kubernetes/platform/networking/` are protected by Git when committed and pushed.
+
+### Pi-hole configuration
+
+Pi-hole uses the `pihole-config` persistent volume claim in the `networking` namespace.
+
+Current limitation:
+
+The PVC is not backed up by a dedicated backup system. Pi-hole can be redeployed from Git, but runtime configuration stored in the PVC is not yet protected beyond the local Kubernetes storage layer.
+
 ## Recovery objectives
 
 Current recovery objectives:
@@ -179,6 +194,7 @@ Current recovery objectives:
 | Raspberry Pi node | Reimage and reconfigure from bootstrap procedure |
 | K3s worker | Rejoin through Ansible |
 | K3s control plane | Rebuild from Ansible; server-state backup is future work |
+| Pi-hole service | Redeploy from Git; PVC restore is future work |
 | Persistent application data | Not yet guaranteed |
 
 Recovery priority:
@@ -189,8 +205,9 @@ Recovery priority:
 4. restore Ansible baseline
 5. restore K3s control plane
 6. restore K3s workers
-7. restore platform services
-8. restore application data
+7. restore MetalLB and Pi-hole
+8. restore platform services
+9. restore application data
 
 ## Design Decisions
 

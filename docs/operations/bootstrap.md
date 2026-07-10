@@ -24,6 +24,7 @@ This document covers:
 - Ansible inventory verification
 - baseline playbook execution
 - K3s installation
+- networking foundation installation
 - cluster verification
 - MkDocs setup
 
@@ -216,7 +217,53 @@ Expected result:
 - Metrics Server is available
 - Local Path Provisioner exists
 
-### 12. Verify MkDocs
+### 12. Install the networking foundation
+
+Apply MetalLB first:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply -k kubernetes/platform/networking/metallb
+kubectl --kubeconfig ansible/kubeconfig wait --namespace metallb-system --for=condition=Available deployment/controller --timeout=180s
+kubectl --kubeconfig ansible/kubeconfig rollout status daemonset/speaker -n metallb-system --timeout=180s
+kubectl --kubeconfig ansible/kubeconfig apply -k kubernetes/platform/networking/metallb
+```
+
+The second apply ensures the `IPAddressPool` and `L2Advertisement` are created after MetalLB CRDs are established.
+
+Apply Pi-hole:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/networking/pihole/namespace.yaml
+kubectl --kubeconfig ansible/kubeconfig create secret generic pihole-admin \
+  --namespace networking \
+  --from-literal=password='<strong-local-password>' \
+  --dry-run=client -o yaml | kubectl --kubeconfig ansible/kubeconfig apply -f -
+kubectl --kubeconfig ansible/kubeconfig apply -k kubernetes/platform/networking/pihole
+kubectl --kubeconfig ansible/kubeconfig rollout status deployment/pihole -n networking --timeout=300s
+```
+
+If the Secret already exists, leave it in place rather than committing its value to Git.
+
+Verify networking:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get ipaddresspools -A
+kubectl --kubeconfig ansible/kubeconfig get l2advertisements -A
+kubectl --kubeconfig ansible/kubeconfig get svc pihole -n networking
+dig @192.168.68.200 openai.com +short
+dig @192.168.68.200 pihole.home.arpa +short
+curl -I http://192.168.68.200/admin/
+```
+
+Expected result:
+
+- MetalLB controller and speakers are running
+- `homelab-lan` address pool exists
+- Pi-hole has LoadBalancer IP `192.168.68.200`
+- public DNS resolves through Pi-hole
+- `pihole.home.arpa` resolves to `192.168.68.200`
+
+### 13. Verify MkDocs
 
 From the repository root:
 
@@ -250,13 +297,21 @@ DHCP reservations keep addresses stable without requiring manual static network 
 
 The bootstrap flow uses Ansible playbooks rather than manual node configuration after initial imaging.
 
+### Networking is applied through Kubernetes manifests
+
+MetalLB and Pi-hole are deployed from declarative manifests under `kubernetes/platform/networking/`.
+
+The Pi-hole administrative password Secret is created locally outside Git until a stronger secrets-management design is introduced.
+
 ## Best Practices
 
 - keep DHCP reservations aligned with Ansible host variables
 - verify SSH before running Ansible
 - run Ansible from the `ansible/` directory
 - run `baseline.yml` before `k3s.yml`
+- apply MetalLB before Pi-hole
 - verify the Kubernetes cluster before deploying services
+- verify DNS through Pi-hole before depending on `.home.arpa` service names
 - keep the documentation build passing after documentation changes
 - commit completed infrastructure and documentation changes together when practical
 

@@ -1,0 +1,4 @@
+resources:
+  - github.com/metallb/metallb/config/native?ref=v0.16.1
+  - ipaddresspool.yaml
+  - l2advertisement.yaml
