@@ -1,44 +1,23 @@
-## Architecture Review — WO-0004 Networking Foundation
+## Architecture Re-review — WO-0004 Networking Foundation
 
-**Reviewer:** gabdul-AI  
-**Result:** Request changes
+**Result:** Approved
 
-The PR is well scoped and aligns closely with WO-0004. MetalLB, Pi-hole, `.home.arpa` naming, ADR-0008, documentation updates, project-state updates and the archived work order are all present and coherent.
+The two blocking findings from the initial review have been addressed.
 
-Before merge, please address the following blocking findings.
+### Resolved findings
 
-### 1. Remove the Pi-hole administrator credential from Git history
+- The Pi-hole administrator credential has been removed from the amended Git history.
+- The repository now contains only a non-production `secret.example.yaml`.
+- The real Secret is created locally outside Git.
+- The local `secret.yaml` path is excluded through `.gitignore`.
+- Pi-hole is pinned to an immutable container-image digest.
+- Networking and operational documentation now explain the secret-creation and recovery procedures.
+- The MetalLB pool is explicitly documented as requiring exclusion from normal DHCP assignment.
 
-`kubernetes/platform/networking/pihole/secret.yaml` currently contains a plaintext administrator password.
+The implementation remains aligned with WO-0004 and ADR-0008. MetalLB, Pi-hole, internal DNS, documentation, validation procedures and project-state updates are coherent and appropriately scoped.
 
-This should not remain in the repository, even as a temporary lab credential.
+### Non-blocking note
 
-Required change:
+The PR description still refers to the previous commit SHA `b02c165`. Since the commit was amended, that reference may be updated or removed.
 
-- remove the credential from the branch history, not only in a follow-up commit
-- replace the committed Secret with a non-deployable example, such as `secret.example.yaml`
-- document how the real Secret is created locally outside Git
-- add the real Secret filename to `.gitignore`
-- update documentation so it explains the mechanism without exposing the value
-
-A future work order can introduce encrypted secret management such as SOPS, Sealed Secrets or External Secrets.
-
-### 2. Pin the Pi-hole container image
-
-The deployment currently uses:
-
-```yaml
-image: pihole/pihole:latest
-```
-This makes rebuilds non-reproducible because latest can resolve to different software over time.
-
-Required change:
-
-- pin the exact Pi-hole image version that was tested
-- preferably use an immutable image digest if practical
-- record the chosen version in the relevant documentation or software inventory
-
-### 3. Non-blocking recommendations
-- State explicitly that 192.168.68.200-192.168.68.220 must be excluded from the router DHCP pool.
-- Add a simple network topology diagram in a future documentation improvement.
-- Add a capability dashboard to PROJECT_STATE.md in a future sprint.
+**Final verdict: Approve.**
