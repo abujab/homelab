@@ -3,15 +3,15 @@
 **Project:** HomeLab  
 **Owner:** Abdul Jabbar  
 **Status:** Active Development  
-**Last Updated:** 2026-07-09
+**Last Updated:** 2026-07-10
 
 ---
 
 ## Current Platform State
 
-HomeLab has completed its first three engineering implementation sprints and the first three documentation sprints.
+HomeLab has completed its first four engineering implementation sprints and the first three documentation sprints.
 
-The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster managed through Ansible and documented through MkDocs Material.
+The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with MetalLB LoadBalancer support, Pi-hole internal DNS, Ansible automation and MkDocs Material documentation.
 
 ---
 
@@ -55,6 +55,21 @@ Completed:
 - kubeconfig fetched to management workstation
 - worker nodes labelled
 - cluster verification completed
+
+### Infrastructure Sprint 4 — Networking Foundation
+
+Status: Complete
+
+Completed:
+
+- MetalLB installed in Layer 2 mode
+- LoadBalancer address pool `192.168.68.200-192.168.68.220` configured
+- Pi-hole deployed in Kubernetes
+- Pi-hole assigned stable LoadBalancer IP `192.168.68.200`
+- `pihole.home.arpa` configured
+- `.home.arpa` naming convention established
+- `elm.home.arpa` reserved for future IBM ELM publication
+- networking documentation updated
 
 ### Documentation Sprint 1 — Overview Foundation
 
@@ -108,6 +123,18 @@ Completed:
 | pi4mB02 | 192.168.68.102 | K3s worker | Ready |
 | pi4mB03 | 192.168.68.103 | K3s worker | Ready |
 | pi4mB04 | 192.168.68.104 | K3s worker | Ready |
+
+Current platform service IPs:
+
+| Service | DNS Name | IP Address | Status |
+|---------|----------|------------|--------|
+| Pi-hole | pihole.home.arpa | 192.168.68.200 | Ready |
+
+Current LoadBalancer pool:
+
+```text
+192.168.68.200-192.168.68.220
+```
 
 ---
 

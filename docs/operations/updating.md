@@ -15,6 +15,7 @@ This document covers:
 - updating the Git repository
 - activating the Python environment
 - updating documentation
+- applying networking manifests
 - running `update.yml`
 - running `baseline.yml`
 - verification steps
@@ -131,7 +132,31 @@ Expected result:
 - CoreDNS is running
 - Metrics Server is available
 
-### 9. Review changes
+### 9. Verify networking services
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get pods -n metallb-system
+kubectl --kubeconfig ansible/kubeconfig get pods -n networking
+kubectl --kubeconfig ansible/kubeconfig get svc pihole -n networking
+kubectl --kubeconfig ansible/kubeconfig get ipaddresspools -A
+kubectl --kubeconfig ansible/kubeconfig get l2advertisements -A
+```
+
+If networking manifests changed, reapply them from the repository root:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply -k kubernetes/platform/networking/metallb
+kubectl --kubeconfig ansible/kubeconfig apply -k kubernetes/platform/networking/pihole
+```
+
+Verify DNS:
+
+```bash
+dig @192.168.68.200 openai.com +short
+dig @192.168.68.200 pihole.home.arpa +short
+```
+
+### 10. Review changes
 
 ```bash
 git status --short
@@ -167,6 +192,7 @@ MkDocs builds are part of the maintenance workflow because documentation is part
 - run Ansible from the `ansible/` directory
 - keep SSH keys loaded in `ssh-agent`
 - verify the cluster after node updates
+- verify MetalLB and Pi-hole after networking changes
 - build documentation before committing documentation changes
 
 ## Future Improvements

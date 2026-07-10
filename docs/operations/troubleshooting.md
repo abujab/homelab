@@ -16,6 +16,7 @@ This document covers:
 - Ansible issues
 - Raspberry Pi baseline issues
 - Kubernetes issues
+- networking issues
 - documentation tooling issues
 
 This document does not replace future service-specific troubleshooting guides.
@@ -28,6 +29,7 @@ Most current operational issues fall into a small number of categories:
 - Ansible inventory or role lookup
 - Raspberry Pi kernel and swap settings
 - K3s kubeconfig and node naming
+- MetalLB and Pi-hole service exposure
 - local Python and MkDocs environment setup
 
 ## Architecture / Implementation
@@ -450,6 +452,168 @@ kubectl --kubeconfig ansible/kubeconfig top nodes
 Verification:
 
 Nodes should be `Ready`, system pods should be running, and Metrics Server should return node metrics.
+
+## Networking
+
+### LoadBalancer IP is pending
+
+Problem:
+
+A `LoadBalancer` service does not receive an external IP.
+
+Cause:
+
+MetalLB may not be installed, the address pool may be missing, or the service may request an address outside the configured pool.
+
+Resolution:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply -k kubernetes/platform/networking/metallb
+kubectl --kubeconfig ansible/kubeconfig get ipaddresspools -A
+kubectl --kubeconfig ansible/kubeconfig describe svc pihole -n networking
+```
+
+Verification:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get svc pihole -n networking
+```
+
+The Pi-hole service should show `192.168.68.200` as its external IP.
+
+### MetalLB custom resources fail on first apply
+
+Problem:
+
+Applying the MetalLB kustomization reports that `IPAddressPool` or `L2Advertisement` has no resource mapping.
+
+Cause:
+
+The MetalLB CRDs were created during the same apply operation, but the Kubernetes API had not established them before custom resources were submitted.
+
+Resolution:
+
+Wait for MetalLB and apply the same kustomization again:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig wait --namespace metallb-system --for=condition=Available deployment/controller --timeout=180s
+kubectl --kubeconfig ansible/kubeconfig rollout status daemonset/speaker -n metallb-system --timeout=180s
+kubectl --kubeconfig ansible/kubeconfig apply -k kubernetes/platform/networking/metallb
+```
+
+Verification:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get ipaddresspools,l2advertisements -A
+```
+
+### Pi-hole DNS does not resolve public names
+
+Problem:
+
+Queries sent to Pi-hole do not resolve public names.
+
+Cause:
+
+The Pi-hole pod may not be running, upstream DNS may be misconfigured, or the LoadBalancer path may not be reachable from the client.
+
+Resolution:
+
+Check Pi-hole state:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get pods,svc,pvc -n networking
+kubectl --kubeconfig ansible/kubeconfig logs deployment/pihole -n networking
+```
+
+Verification:
+
+```bash
+dig @192.168.68.200 openai.com +short
+```
+
+### Pi-hole pod waits for the admin Secret
+
+Problem:
+
+The Pi-hole pod does not start and reports that `pihole-admin` is missing.
+
+Cause:
+
+The real administrative password Secret is intentionally not committed to Git.
+
+Resolution:
+
+Create the Secret locally:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/networking/pihole/namespace.yaml
+kubectl --kubeconfig ansible/kubeconfig create secret generic pihole-admin \
+  --namespace networking \
+  --from-literal=password='<strong-local-password>' \
+  --dry-run=client -o yaml | kubectl --kubeconfig ansible/kubeconfig apply -f -
+kubectl --kubeconfig ansible/kubeconfig rollout restart deployment/pihole -n networking
+```
+
+Verification:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get pods -n networking
+```
+
+### `.home.arpa` service name does not resolve
+
+Problem:
+
+`pihole.home.arpa` does not resolve.
+
+Cause:
+
+Pi-hole local DNS configuration may not include the expected `dnsmasq` line, or the pod may need to be restarted after configuration changes.
+
+Resolution:
+
+Confirm the deployment includes:
+
+```text
+address=/pihole.home.arpa/192.168.68.200
+```
+
+Reapply the Pi-hole manifests:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply -k kubernetes/platform/networking/pihole
+kubectl --kubeconfig ansible/kubeconfig rollout restart deployment/pihole -n networking
+kubectl --kubeconfig ansible/kubeconfig rollout status deployment/pihole -n networking --timeout=300s
+```
+
+Verification:
+
+```bash
+dig @192.168.68.200 pihole.home.arpa +short
+```
+
+### LoadBalancer IP works from nodes but not from the management environment
+
+Problem:
+
+The Pi-hole LoadBalancer IP works from Kubernetes node networking, but not from the execution environment used by automation.
+
+Cause:
+
+The execution environment may not be attached to the same Layer 2 network path as the Raspberry Pi LAN, even if it can reach the Kubernetes API.
+
+Resolution:
+
+Validate from a host-network pod:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig run lb-dns-public-test --rm -i --restart=Never --image=busybox:1.36 --overrides='{"spec":{"hostNetwork":true,"dnsPolicy":"ClusterFirstWithHostNet"}}' -- nslookup openai.com 192.168.68.200
+```
+
+Verification:
+
+The test pod should receive DNS answers from `192.168.68.200`.
 
 ## Documentation
 

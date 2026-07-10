@@ -11,3 +11,6 @@ site/
 # Editor workspace files
 *.sublime-project
 *.sublime-workspace
+
+# Local Kubernetes secrets
+kubernetes/platform/networking/pihole/secret.yaml

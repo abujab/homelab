@@ -90,17 +90,22 @@ Objectives:
 
 ### Phase 5 — Networking Foundation
 
-Status: Planned
+Status: Complete
 
-Objectives:
+Completed:
 
 - MetalLB
-- ingress controller
-- Pi-hole or internal DNS
+- Pi-hole internal DNS
 - `.home.arpa` naming
 - service discovery
 - IBM ELM DNS entry
 - first internal service URLs
+
+Remaining future work:
+
+- ingress controller
+- TLS certificate management
+- additional service records
 
 ### Phase 6 — Observability
 

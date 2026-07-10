@@ -97,7 +97,14 @@ K3s currently provides:
 - Local Path Provisioner
 - containerd runtime
 
-Traefik and ServiceLB were disabled during K3s installation so that ingress and load balancing can be introduced intentionally later.
+HomeLab platform networking currently provides:
+
+- MetalLB Layer 2 LoadBalancer support
+- Pi-hole internal DNS
+- `.home.arpa` service naming
+- `pihole.home.arpa` at `192.168.68.200`
+
+Traefik and ServiceLB were disabled during K3s installation so that ingress and load balancing could be introduced intentionally. MetalLB now provides the first LAN LoadBalancer implementation. Ingress remains future work.
 
 ### Target hybrid topology
 
@@ -144,11 +151,11 @@ x86 laptops provide more CPU and memory and are better suited for heavier worklo
 
 ### `.home.arpa` as internal naming domain
 
-The planned internal domain is `.home.arpa`, because `.local` is reserved for mDNS and can cause conflicts.
+The internal domain is `.home.arpa`, because `.local` is reserved for mDNS and can cause conflicts.
 
 ### Explicit infrastructure sequencing
 
-Networking services such as MetalLB, ingress and DNS will be introduced before application services such as Grafana, Git or AI tools.
+Networking services such as MetalLB and DNS are introduced before application services such as Grafana, Git or AI tools.
 
 ---
 
@@ -168,11 +175,9 @@ Networking services such as MetalLB, ingress and DNS will be introduced before a
 
 Near-term architecture improvements:
 
-- MetalLB for LAN load balancer IPs
 - ingress controller
-- Pi-hole or equivalent internal DNS
-- `.home.arpa` service naming
 - TLS certificate management
+- additional `.home.arpa` service records
 
 Longer-term improvements:
 
