@@ -19,6 +19,7 @@ This document covers:
 - playbooks
 - roles
 - the `common` role
+- the `network` role
 - the `k3s` role
 - idempotency
 - ssh-agent usage
@@ -58,6 +59,7 @@ ansible/
 |   +-- update.yml
 +-- roles/
     +-- common/
+    +-- network/
     +-- k3s/
 ```
 
@@ -121,7 +123,7 @@ Playbooks orchestrate roles or focused maintenance tasks.
 
 | Playbook | Purpose |
 |----------|---------|
-| `baseline.yml` | Applies the common baseline role to all Raspberry Pi nodes |
+| `baseline.yml` | Applies the common and network baseline roles to all Raspberry Pi nodes |
 | `update.yml` | Updates APT packages across all Raspberry Pi nodes |
 | `k3s.yml` | Installs and verifies the K3s cluster |
 | `hardening.yml` | Reserved for security hardening work |
@@ -135,6 +137,7 @@ The current roles are:
 | Role | Responsibility |
 |------|----------------|
 | `common` | Shared operating system baseline for Raspberry Pi nodes |
+| `network` | Wired Ethernet baseline and Wi-Fi radio disablement |
 | `k3s` | K3s server, worker join, kubeconfig, labels and verification |
 
 ### Common role
@@ -149,6 +152,28 @@ The `common` role currently manages:
 - baseline verification
 
 These tasks prepare each node for Kubernetes and keep the node baseline consistent.
+
+### Network role
+
+The `network` role currently manages:
+
+- Ethernet preflight validation before Wi-Fi changes
+- `eth0` operational-state verification
+- inventory IPv4 address verification on `eth0`
+- default-route verification through gateway `192.168.68.1`
+- Wi-Fi radio disablement through NetworkManager
+- verification that `wlan0` carries no IPv4 address
+- verification that SSH connectivity remains functional
+
+The role is applied after `common` in `playbooks/baseline.yml`:
+
+```yaml
+roles:
+  - common
+  - network
+```
+
+The role is intentionally separate from `common` and `k3s` because wired transport is a platform networking responsibility.
 
 ### K3s role
 
@@ -181,7 +206,7 @@ Tasks should be safe to run repeatedly. Examples include using package state dec
 
 ### Verification is part of automation
 
-Automation should verify the resulting system state, not only apply changes. The existing roles include verification tasks for both node baseline and K3s cluster health.
+Automation should verify the resulting system state, not only apply changes. The existing roles include verification tasks for node baseline, wired network state and K3s cluster health.
 
 ## Best Practices
 
@@ -193,6 +218,7 @@ Automation should verify the resulting system state, not only apply changes. The
 - prefer Ansible modules over shell commands
 - use shell commands only when no suitable module exists
 - make tasks safe to repeat
+- run network changes against one node before the full `pis` group
 - verify the resulting infrastructure state after each playbook run
 
 ## Future Improvements
@@ -213,3 +239,4 @@ Future Ansible work may include:
 - [Security](security.md)
 - [Repository Structure](../overview/repository.md)
 - [Roadmap](../overview/roadmap.md)
+- [ADR-0009 Wired Network for Cluster Nodes](../decisions/ADR-0009-wired-network-for-cluster-nodes.md)

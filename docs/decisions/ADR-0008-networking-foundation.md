@@ -116,6 +116,8 @@ Negative
 
 ## References
 
+- [ADR-0009 Wired Network for Cluster Nodes](ADR-0009-wired-network-for-cluster-nodes.md)
+
 https://metallb.universe.tf/installation/
 
 https://metallb.universe.tf/configuration/

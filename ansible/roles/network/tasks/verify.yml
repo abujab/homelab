@@ -1,0 +1,117 @@
+---
+# ==============================================================================
+# Task file: verify.yml
+#
+# Purpose
+# -------
+# Confirm the final wired network baseline after Wi-Fi enforcement.
+# ==============================================================================
+
+- name: Verify Ethernet interface exists
+  ansible.builtin.command:
+    cmd: "ip link show dev {{ network_ethernet_interface }}"
+  register: network_verify_ethernet_link
+  changed_when: false
+  failed_when: false
+
+- name: Assert Ethernet interface exists
+  ansible.builtin.assert:
+    that:
+      - network_verify_ethernet_link.rc == 0
+    fail_msg: >-
+      {{ inventory_hostname }} network verification failed: expected
+      {{ network_ethernet_interface }} to exist. Detected:
+      {{ network_verify_ethernet_link.stderr | default(network_verify_ethernet_link.stdout) }}
+    success_msg: "{{ inventory_hostname }} network verification: {{ network_ethernet_interface }} exists"
+
+- name: Verify Ethernet operational state
+  ansible.builtin.command:
+    cmd: "cat /sys/class/net/{{ network_ethernet_interface }}/operstate"
+  register: network_verify_ethernet_operstate
+  changed_when: false
+
+- name: Assert Ethernet is up
+  ansible.builtin.assert:
+    that:
+      - network_verify_ethernet_operstate.stdout | trim == 'up'
+    fail_msg: >-
+      {{ inventory_hostname }} network verification failed: expected
+      {{ network_ethernet_interface }} operstate to be up. Detected:
+      {{ network_verify_ethernet_operstate.stdout | trim }}
+    success_msg: "{{ inventory_hostname }} network verification: {{ network_ethernet_interface }} is up"
+
+- name: Verify Ethernet IPv4 address
+  ansible.builtin.command:
+    cmd: "ip -4 -o addr show dev {{ network_ethernet_interface }} scope global"
+  register: network_verify_ethernet_ipv4
+  changed_when: false
+
+- name: Assert Ethernet carries expected node address
+  ansible.builtin.assert:
+    that:
+      - ansible_host in network_verify_ethernet_ipv4.stdout
+    fail_msg: >-
+      {{ inventory_hostname }} network verification failed: expected
+      {{ network_ethernet_interface }} to carry inventory address
+      {{ ansible_host }}. Detected: {{ network_verify_ethernet_ipv4.stdout | default('no IPv4 address') }}
+    success_msg: >-
+      {{ inventory_hostname }} network verification: {{ network_ethernet_interface }}
+      carries {{ ansible_host }}
+
+- name: Verify default IPv4 route
+  ansible.builtin.command:
+    cmd: ip -4 route show default
+  register: network_verify_default_route
+  changed_when: false
+
+- name: Assert default route uses Ethernet and expected gateway
+  ansible.builtin.assert:
+    that:
+      - ('dev ' ~ network_ethernet_interface) in network_verify_default_route.stdout
+      - ('via ' ~ network_expected_gateway) in network_verify_default_route.stdout
+    fail_msg: >-
+      {{ inventory_hostname }} network verification failed: expected default route via
+      {{ network_expected_gateway }} dev {{ network_ethernet_interface }}. Detected:
+      {{ network_verify_default_route.stdout | default('no default route') }}
+    success_msg: >-
+      {{ inventory_hostname }} network verification: default route uses
+      {{ network_expected_gateway }} dev {{ network_ethernet_interface }}
+
+- name: Verify Wi-Fi IPv4 address state
+  ansible.builtin.command:
+    cmd: "ip -4 -o addr show dev {{ network_wifi_interface }} scope global"
+  register: network_verify_wifi_ipv4
+  changed_when: false
+  failed_when: false
+  when: network_disable_wifi | bool
+
+- name: Assert Wi-Fi does not carry an IPv4 address
+  ansible.builtin.assert:
+    that:
+      - network_verify_wifi_ipv4.stdout | trim == ''
+    fail_msg: >-
+      {{ inventory_hostname }} network verification failed: expected
+      {{ network_wifi_interface }} to have no IPv4 address. Detected:
+      {{ network_verify_wifi_ipv4.stdout | default(network_verify_wifi_ipv4.stderr) }}
+    success_msg: "{{ inventory_hostname }} network verification: {{ network_wifi_interface }} has no IPv4 address"
+  when: network_disable_wifi | bool
+
+- name: Verify NetworkManager Wi-Fi radio state
+  ansible.builtin.command:
+    cmd: nmcli radio wifi
+  register: network_verify_wifi_radio_state
+  changed_when: false
+  when: network_disable_wifi | bool
+
+- name: Assert NetworkManager reports Wi-Fi disabled
+  ansible.builtin.assert:
+    that:
+      - network_verify_wifi_radio_state.stdout | trim == 'disabled'
+    fail_msg: >-
+      {{ inventory_hostname }} network verification failed: expected NetworkManager
+      Wi-Fi radio state disabled. Detected: {{ network_verify_wifi_radio_state.stdout | trim }}
+    success_msg: "{{ inventory_hostname }} network verification: NetworkManager Wi-Fi radio is disabled"
+  when: network_disable_wifi | bool
+
+- name: Verify SSH connectivity remains functional
+  ansible.builtin.ping:

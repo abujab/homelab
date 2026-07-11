@@ -1,0 +1,31 @@
+---
+# ==============================================================================
+# Task file: wifi.yml
+#
+# Purpose
+# -------
+# Disable Wi-Fi through NetworkManager without removing recovery capability.
+# ==============================================================================
+
+- name: Check NetworkManager Wi-Fi radio state
+  ansible.builtin.command:
+    cmd: nmcli radio wifi
+  register: network_wifi_radio_state
+  changed_when: false
+  when: network_disable_wifi | bool
+
+- name: Disable Wi-Fi radio through NetworkManager
+  ansible.builtin.command:
+    cmd: nmcli radio wifi off
+  register: network_wifi_disable_result
+  changed_when: true
+  when:
+    - network_disable_wifi | bool
+    - network_wifi_radio_state.stdout | trim == 'enabled'
+
+- name: Report Wi-Fi radio already disabled
+  ansible.builtin.debug:
+    msg: "{{ inventory_hostname }} Wi-Fi radio already disabled"
+  when:
+    - network_disable_wifi | bool
+    - network_wifi_radio_state.stdout | trim == 'disabled'

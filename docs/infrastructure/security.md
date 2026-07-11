@@ -16,6 +16,7 @@ This document covers:
 - ssh-agent usage
 - sudo usage through Ansible
 - Git as source of truth
+- wired management baseline
 - current limitations
 - future TLS
 - future secrets management
@@ -68,6 +69,8 @@ become: true
 
 This means privileged changes are performed through sudo rather than by logging in directly as root.
 
+Cluster node network access is managed through the wired Ethernet baseline. Wi-Fi is disabled during normal operation and should only be re-enabled deliberately for recovery.
+
 ## Design Decisions
 
 ### SSH keys instead of passwords
@@ -86,6 +89,16 @@ Ansible uses privilege escalation for tasks that require root access. This keeps
 
 Infrastructure state should be represented in Git through Ansible, Kubernetes manifests, Helm values and documentation.
 
+### Wi-Fi recovery is exceptional
+
+Wi-Fi may be re-enabled manually only through direct console access, an existing Ethernet SSH session or another explicitly documented recovery path:
+
+```bash
+sudo nmcli radio wifi on
+```
+
+The next baseline playbook run restores the managed Wi-Fi-disabled state.
+
 ## Best Practices
 
 - use SSH keys for node access
@@ -93,6 +106,7 @@ Infrastructure state should be represented in Git through Ansible, Kubernetes ma
 - avoid direct root login as the normal operating model
 - keep infrastructure changes in Git
 - prefer automated, reviewable changes over manual configuration
+- prefer wired Ethernet for cluster node access and platform traffic
 - avoid committing secrets to the repository
 - document security assumptions and limitations explicitly
 

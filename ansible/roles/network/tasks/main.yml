@@ -1,0 +1,17 @@
+---
+# ==============================================================================
+# Role: network
+#
+# Purpose
+# -------
+# Safely enforce wired Ethernet as the managed cluster network transport.
+# ==============================================================================
+
+- name: Run wired Ethernet preflight validation
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Enforce Wi-Fi radio state
+  ansible.builtin.import_tasks: wifi.yml
+
+- name: Verify wired network baseline
+  ansible.builtin.import_tasks: verify.yml
