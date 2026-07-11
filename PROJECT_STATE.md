@@ -3,15 +3,15 @@
 **Project:** HomeLab  
 **Owner:** Abdul Jabbar  
 **Status:** Active Development  
-**Last Updated:** 2026-07-10
+**Last Updated:** 2026-07-11
 
 ---
 
 ## Current Platform State
 
-HomeLab has completed its first four engineering implementation sprints and the first three documentation sprints.
+HomeLab has completed its first five engineering implementation sprints and the first three documentation sprints.
 
-The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with MetalLB LoadBalancer support, Pi-hole internal DNS, Ansible automation and MkDocs Material documentation.
+The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, Ansible automation and MkDocs Material documentation.
 
 ---
 
@@ -71,6 +71,24 @@ Completed:
 - `elm.home.arpa` reserved for future IBM ELM publication
 - networking documentation updated
 
+### Infrastructure Sprint 5 — Wired Network Baseline
+
+Status: Complete
+
+Completed:
+
+- TP-Link TL-SG108E deployed as the wired cluster switch
+- all Raspberry Pi Kubernetes nodes migrated to Ethernet transport
+- dedicated Ansible `network` role created
+- Ethernet preflight checks implemented before Wi-Fi changes
+- Wi-Fi disabled through NetworkManager and verified through Ansible
+- wired default routes through `192.168.68.1` verified
+- single-node reboot persistence verified on `pi4mB01`
+- full-cluster idempotency verified with `changed=0`
+- MetalLB Layer 2 reachability verified through the LAN neighbor table and service traffic
+- Pi-hole UI and DNS verified from the LAN
+- ADR-0009 created
+
 ### Documentation Sprint 1 — Overview Foundation
 
 Status: Complete
@@ -123,6 +141,16 @@ Completed:
 | pi4mB02 | 192.168.68.102 | K3s worker | Ready |
 | pi4mB03 | 192.168.68.103 | K3s worker | Ready |
 | pi4mB04 | 192.168.68.104 | K3s worker | Ready |
+
+Current node network baseline:
+
+| Setting | Value |
+|---------|-------|
+| Switch | TP-Link TL-SG108E |
+| Node interface | eth0 |
+| Default gateway | 192.168.68.1 |
+| Node subnet | 192.168.68.0/22 |
+| Wi-Fi state | Disabled through Ansible |
 
 Current platform service IPs:
 

@@ -19,6 +19,7 @@ This document covers:
 - configuring SSH access
 - updating inventory if needed
 - running the baseline playbook
+- restoring wired Ethernet state
 - rejoining K3s
 - verification
 - replacing the management workstation
@@ -36,6 +37,7 @@ Raspberry Pi node identity is represented by:
 - Ansible inventory membership
 - Ansible host variables
 - Kubernetes node role
+- wired Ethernet address on `eth0`
 
 ## Architecture / Implementation
 
@@ -69,11 +71,15 @@ Configure:
 - SSH public key for the management workstation
 - hostname matching the failed node
 
+Connect the replacement node to the TP-Link TL-SG108E switch through wired Ethernet before applying the baseline.
+
 ### 3. Restore the network identity
 
 Ensure the DHCP reservation maps the replacement Raspberry Pi to the expected IP address for that hostname.
 
 If the hardware MAC address changed, update the DHCP reservation on the router.
+
+The replacement node should receive its inventory address on `eth0` and use default gateway `192.168.68.1`.
 
 ### 4. Verify SSH access
 
@@ -105,6 +111,16 @@ ansible-playbook playbooks/baseline.yml --limit <hostname>
 ```
 
 This applies the required operating system baseline.
+
+The baseline also applies the wired network baseline. It verifies Ethernet before disabling Wi-Fi, then confirms that Wi-Fi has no IPv4 address and NetworkManager reports Wi-Fi as disabled.
+
+Verify the network state:
+
+```bash
+ansible <hostname> -m shell -a "ip -br addr show | grep -E 'eth0|wlan0'"
+ansible <hostname> -m shell -a "ip route show default"
+ansible <hostname> -m command -a "nmcli radio wifi"
+```
 
 ### 7. Rejoin K3s
 
@@ -205,6 +221,10 @@ ansible-playbook playbooks/k3s.yml
 
 Replacement nodes should reuse the existing hostname and reserved IP unless there is a deliberate inventory change.
 
+### Wired baseline is restored before cluster services
+
+Replacement nodes should return to the managed Ethernet baseline before K3s join or service validation.
+
 ### Worker recovery is simpler than control-plane recovery
 
 The current platform has one K3s server. Worker nodes can be rejoined more easily than the control-plane node.
@@ -219,6 +239,7 @@ The workstation can be rebuilt from the repository, but access depends on restor
 - preserve hostnames and reserved IPs during replacement
 - verify SSH before running Ansible
 - run `baseline.yml` before K3s recovery
+- verify Ethernet state before relying on the node for Kubernetes workloads
 - verify Kubernetes after node replacement
 - avoid storing unique platform knowledge only on the workstation
 - keep the repository pushed to a remote Git server
@@ -241,3 +262,4 @@ Future recovery improvements should include:
 - [Troubleshooting](troubleshooting.md)
 - [Raspberry Pi Cluster](../infrastructure/raspberry-pi-cluster.md)
 - [Kubernetes](../infrastructure/kubernetes.md)
+- [Networking](../infrastructure/networking.md)

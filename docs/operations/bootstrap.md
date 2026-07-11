@@ -25,6 +25,7 @@ This document covers:
 - baseline playbook execution
 - K3s installation
 - networking foundation installation
+- wired network baseline validation
 - cluster verification
 - MkDocs setup
 
@@ -42,6 +43,7 @@ The current platform consists of:
 - Ansible for configuration management
 - K3s for Kubernetes
 - MkDocs Material for documentation
+- TP-Link TL-SG108E wired switch for Raspberry Pi node transport
 
 ## Architecture / Implementation
 
@@ -183,6 +185,24 @@ ansible-playbook playbooks/baseline.yml
 
 The baseline configures common packages, time synchronization, swap state and kernel cgroup settings required for Kubernetes.
 
+It also applies the `network` role, which verifies wired Ethernet on `eth0`, verifies the default route through `192.168.68.1`, disables Wi-Fi through NetworkManager and verifies that `wlan0` has no IPv4 address.
+
+For a new or rebuilt cluster, validate one node first:
+
+```bash
+ansible-playbook playbooks/baseline.yml --limit pi4mB01
+ansible-playbook playbooks/baseline.yml --limit pi4mB01
+```
+
+Then run the baseline against all Raspberry Pi nodes:
+
+```bash
+ansible-playbook playbooks/baseline.yml
+ansible-playbook playbooks/baseline.yml
+```
+
+The second run should report no network changes.
+
 ### 10. Install K3s
 
 Install the current K3s cluster:
@@ -247,6 +267,9 @@ If the Secret already exists, leave it in place rather than committing its value
 Verify networking:
 
 ```bash
+ansible pis -m shell -a "ip -br addr show | grep -E 'eth0|wlan0'"
+ansible pis -m shell -a "ip route show default"
+ansible pis -m command -a "nmcli radio wifi"
 kubectl --kubeconfig ansible/kubeconfig get ipaddresspools -A
 kubectl --kubeconfig ansible/kubeconfig get l2advertisements -A
 kubectl --kubeconfig ansible/kubeconfig get svc pihole -n networking
@@ -260,6 +283,8 @@ Expected result:
 - MetalLB controller and speakers are running
 - `homelab-lan` address pool exists
 - Pi-hole has LoadBalancer IP `192.168.68.200`
+- all nodes use `eth0` and gateway `192.168.68.1`
+- Wi-Fi is disabled on all cluster nodes
 - public DNS resolves through Pi-hole
 - `pihole.home.arpa` resolves to `192.168.68.200`
 
@@ -297,6 +322,10 @@ DHCP reservations keep addresses stable without requiring manual static network 
 
 The bootstrap flow uses Ansible playbooks rather than manual node configuration after initial imaging.
 
+### Wired Ethernet is the cluster transport
+
+Dedicated cluster nodes use wired Ethernet through the TP-Link TL-SG108E switch. Wi-Fi is disabled after Ethernet preflight checks pass.
+
 ### Networking is applied through Kubernetes manifests
 
 MetalLB and Pi-hole are deployed from declarative manifests under `kubernetes/platform/networking/`.
@@ -309,6 +338,7 @@ The Pi-hole administrative password Secret is created locally outside Git until 
 - verify SSH before running Ansible
 - run Ansible from the `ansible/` directory
 - run `baseline.yml` before `k3s.yml`
+- validate one node before applying network changes to the full cluster
 - apply MetalLB before Pi-hole
 - verify the Kubernetes cluster before deploying services
 - verify DNS through Pi-hole before depending on `.home.arpa` service names

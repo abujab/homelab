@@ -30,6 +30,7 @@ Most current operational issues fall into a small number of categories:
 - Raspberry Pi kernel and swap settings
 - K3s kubeconfig and node naming
 - MetalLB and Pi-hole service exposure
+- wired Ethernet and Wi-Fi baseline
 - local Python and MkDocs environment setup
 
 ## Architecture / Implementation
@@ -454,6 +455,94 @@ Verification:
 Nodes should be `Ready`, system pods should be running, and Metrics Server should return node metrics.
 
 ## Networking
+
+### Ethernet preflight fails
+
+Problem:
+
+The baseline playbook fails before disabling Wi-Fi.
+
+Cause:
+
+The `network` role requires `eth0` to exist, be operationally up, carry the node inventory address and provide the default route through `192.168.68.1`.
+
+Resolution:
+
+Check physical cabling, the TP-Link TL-SG108E switch port, DHCP reservation and the node's Ethernet state:
+
+```bash
+cd ansible
+ansible <hostname> -m shell -a "ip -br addr show dev eth0"
+ansible <hostname> -m shell -a "ip route show default"
+```
+
+Verification:
+
+```bash
+ansible-playbook playbooks/baseline.yml --limit <hostname>
+```
+
+The play should pass preflight before any Wi-Fi change is attempted.
+
+### Wi-Fi needs emergency recovery
+
+Problem:
+
+Ethernet access is unavailable and temporary Wi-Fi recovery is required.
+
+Cause:
+
+Dedicated cluster nodes normally keep Wi-Fi disabled through Ansible.
+
+Resolution:
+
+Re-enable Wi-Fi only through direct console access, an existing Ethernet SSH session or another explicitly documented recovery path:
+
+```bash
+sudo nmcli radio wifi on
+```
+
+Correct the wired network issue before returning the node to normal operation.
+
+Verification:
+
+After Ethernet is restored, rerun the baseline:
+
+```bash
+cd ansible
+ansible-playbook playbooks/baseline.yml --limit <hostname>
+ansible <hostname> -m command -a "nmcli radio wifi"
+```
+
+The final Wi-Fi radio state should be `disabled`.
+
+### Wi-Fi has an IPv4 address
+
+Problem:
+
+`wlan0` has an IPv4 address after baseline execution.
+
+Cause:
+
+Wi-Fi may have been manually re-enabled for recovery, or NetworkManager may not have applied the radio state.
+
+Resolution:
+
+Run the baseline playbook:
+
+```bash
+cd ansible
+ansible-playbook playbooks/baseline.yml --limit <hostname>
+```
+
+Verification:
+
+```bash
+ansible <hostname> -m shell -a "ip -br addr show | grep -E 'eth0|wlan0'"
+ansible <hostname> -m command -a "nmcli radio wifi"
+```
+
+`eth0` should carry the node address, `wlan0` should have no IPv4 address and Wi-Fi should be `disabled`.
 
 ### LoadBalancer IP is pending
 

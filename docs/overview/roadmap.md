@@ -100,6 +100,9 @@ Completed:
 - service discovery
 - IBM ELM DNS entry
 - first internal service URLs
+- TP-Link TL-SG108E wired switch baseline
+- wired Ethernet as cluster node transport
+- Wi-Fi disabled through Ansible
 
 Remaining future work:
 

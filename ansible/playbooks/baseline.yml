@@ -15,8 +15,8 @@
 #   • SSH configuration
 #   • Kernel configuration
 #
-# The implementation lives in the "common" role. This playbook simply defines
-# where that role should be applied.
+# The implementation lives in roles. This playbook simply defines where those
+# roles should be applied.
 #
 # This ensures every Pi behaves identically.
 # ==============================================================================
@@ -48,3 +48,4 @@
 
   roles:
     - common
+    - network

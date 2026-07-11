@@ -15,6 +15,8 @@ This document covers:
 - current LAN range
 - DHCP reservations
 - current host IPs
+- wired Ethernet baseline
+- Wi-Fi disablement
 - MetalLB LoadBalancer address pool
 - Pi-hole internal DNS
 - `.home.arpa` DNS naming
@@ -25,15 +27,17 @@ This document does not define a final production network architecture. VLANs, se
 
 ## Background
 
-The current platform runs on the home LAN:
+The current platform runs on the home LAN. Nodes currently report the LAN subnet as:
 
 ```text
-192.168.68.0/24
+192.168.68.0/22
 ```
 
 The Raspberry Pi nodes are reached by reserved LAN addresses. Ansible and kubectl run from the management workstation over this network.
 
 HomeLab now exposes platform services on the LAN through MetalLB and uses Pi-hole as the first internal DNS service.
+
+All dedicated Raspberry Pi Kubernetes nodes use wired Ethernet through a TP-Link TL-SG108E switch. Wi-Fi is disabled through Ansible for normal operation.
 
 ## Architecture / Implementation
 
@@ -43,12 +47,14 @@ Current network topology:
 Arch Linux management laptop
         |
         v
-Home LAN 192.168.68.0/24
+Home LAN 192.168.68.0/22
         |
-        +-- pi4mB01 / 192.168.68.101
-        +-- pi4mB02 / 192.168.68.102
-        +-- pi4mB03 / 192.168.68.103
-        +-- pi4mB04 / 192.168.68.104
+        +-- TP-Link TL-SG108E Ethernet switch
+            |
+            +-- pi4mB01 / eth0 / 192.168.68.101
+            +-- pi4mB02 / eth0 / 192.168.68.102
+            +-- pi4mB03 / eth0 / 192.168.68.103
+            +-- pi4mB04 / eth0 / 192.168.68.104
         |
         +-- MetalLB service pool / 192.168.68.200-192.168.68.220
             +-- pihole.home.arpa / 192.168.68.200
@@ -68,6 +74,38 @@ The reserved addresses are reflected in Ansible host variables under:
 ```text
 ansible/inventories/home/host_vars/
 ```
+
+### Wired node transport
+
+Current node transport:
+
+| Setting | Value |
+|---------|-------|
+| Switch | TP-Link TL-SG108E |
+| Node interface | `eth0` |
+| Default gateway | `192.168.68.1` |
+| Wi-Fi interface | `wlan0` |
+| Wi-Fi radio state | Disabled through NetworkManager |
+
+The wired baseline is enforced by the Ansible `network` role.
+
+The role verifies that:
+
+- `eth0` exists
+- `eth0` is operationally up
+- `eth0` carries the node inventory address
+- the default route uses `eth0`
+- the default gateway is `192.168.68.1`
+- `wlan0` carries no IPv4 address
+- NetworkManager reports Wi-Fi as disabled
+
+Wi-Fi can be temporarily re-enabled only for emergency recovery:
+
+```bash
+sudo nmcli radio wifi on
+```
+
+The next baseline run restores the declared Wi-Fi-disabled state.
 
 ### MetalLB
 
@@ -174,6 +212,12 @@ elm.home.arpa
 
 MetalLB is used instead of K3s ServiceLB so LAN service exposure is explicit, declarative and tied to a documented IP pool.
 
+MetalLB Layer 2 service exposure depends on reliable Ethernet and ARP behavior. Raspberry Pi Wi-Fi is not used as the cluster transport for MetalLB or platform-service traffic.
+
+### Wi-Fi disabled on cluster nodes
+
+Wi-Fi is disabled through NetworkManager rather than by removing packages, deleting profiles or blacklisting kernel modules. This keeps emergency recovery possible while preserving the managed production baseline.
+
 ### Defer ingress
 
 Ingress is still planned but not currently installed. DNS and LoadBalancer support were introduced first so future ingress work can publish stable names.
@@ -181,6 +225,8 @@ Ingress is still planned but not currently installed. DNS and LoadBalancer suppo
 ## Best Practices
 
 - keep DHCP reservations aligned with Ansible host variables
+- keep dedicated cluster nodes on wired Ethernet
+- keep Wi-Fi disabled during normal operation
 - use DNS names for services instead of node hostnames
 - avoid hardcoded IP addresses in application configuration
 - reserve machine names for hardware identity
@@ -209,6 +255,8 @@ kubectl --kubeconfig ansible/kubeconfig get pods -A
 kubectl --kubeconfig ansible/kubeconfig get svc -A
 kubectl --kubeconfig ansible/kubeconfig get ipaddresspools -A
 kubectl --kubeconfig ansible/kubeconfig get l2advertisements -A
+ansible pis -m shell -a "ip route show default"
+ansible pis -m command -a "nmcli radio wifi"
 dig @192.168.68.200 openai.com +short
 dig @192.168.68.200 pihole.home.arpa +short
 curl -I http://192.168.68.200/admin/
@@ -222,3 +270,4 @@ curl -I http://192.168.68.200/admin/
 - [Architecture](../overview/architecture.md)
 - [Roadmap](../overview/roadmap.md)
 - [ADR-0008 Networking Foundation](../decisions/ADR-0008-networking-foundation.md)
+- [ADR-0009 Wired Network for Cluster Nodes](../decisions/ADR-0009-wired-network-for-cluster-nodes.md)

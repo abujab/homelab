@@ -40,6 +40,8 @@ The cluster was built in phases:
 5. build baseline role
 6. install K3s
 7. verify Kubernetes nodes and system pods
+8. introduce MetalLB and Pi-hole networking
+9. enforce wired Ethernet as the cluster node transport
 
 The current Kubernetes cluster is healthy.
 
@@ -61,12 +63,13 @@ Arch Linux management laptop
         │
         │ SSH / Ansible / kubectl
         ▼
-Home LAN 192.168.68.0/24
+Home LAN 192.168.68.0/22
         │
-        ├── pi4mB01 / 192.168.68.101
-        ├── pi4mB02 / 192.168.68.102
-        ├── pi4mB03 / 192.168.68.103
-        └── pi4mB04 / 192.168.68.104
+        └── TP-Link TL-SG108E Ethernet switch
+            ├── pi4mB01 / eth0 / 192.168.68.101
+            ├── pi4mB02 / eth0 / 192.168.68.102
+            ├── pi4mB03 / eth0 / 192.168.68.103
+            └── pi4mB04 / eth0 / 192.168.68.104
 ```
 
 ### Current logical topology
@@ -103,6 +106,8 @@ HomeLab platform networking currently provides:
 - Pi-hole internal DNS
 - `.home.arpa` service naming
 - `pihole.home.arpa` at `192.168.68.200`
+- wired Ethernet node transport
+- Wi-Fi disabled on dedicated cluster nodes
 
 Traefik and ServiceLB were disabled during K3s installation so that ingress and load balancing could be introduced intentionally. MetalLB now provides the first LAN LoadBalancer implementation. Ingress remains future work.
 
@@ -157,6 +162,10 @@ The internal domain is `.home.arpa`, because `.local` is reserved for mDNS and c
 
 Networking services such as MetalLB and DNS are introduced before application services such as Grafana, Git or AI tools.
 
+### Wired Ethernet as cluster transport
+
+Dedicated cluster nodes use wired Ethernet for Kubernetes, MetalLB and platform-service traffic. Raspberry Pi Wi-Fi is retained only as an exceptional recovery option and is disabled by the managed baseline.
+
 ---
 
 ## Best Practices
@@ -166,6 +175,7 @@ Networking services such as MetalLB and DNS are introduced before application se
 - use Kubernetes labels for workload placement
 - avoid hardcoded IPs in application configuration
 - prefer service DNS names over machine names
+- use wired Ethernet for cluster node transport
 - document every new platform capability
 - verify each infrastructure layer before building the next one
 

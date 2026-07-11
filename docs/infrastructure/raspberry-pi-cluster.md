@@ -16,6 +16,7 @@ This document covers:
 - hostnames and IP addresses
 - operating system and CPU architecture
 - management workstation model
+- wired Ethernet topology
 - current node roles
 - current topology
 - future hardware expansion context
@@ -30,6 +31,8 @@ The nodes form the ARM infrastructure tier of the platform. They provide the fir
 
 The cluster is managed from an Arch Linux laptop using SSH, Ansible and kubectl.
 
+All dedicated Raspberry Pi Kubernetes nodes now use wired Ethernet as their managed cluster transport.
+
 ## Architecture / Implementation
 
 Current physical topology:
@@ -39,12 +42,14 @@ Arch Linux management laptop
         |
         | SSH / Ansible / kubectl
         v
-Home LAN 192.168.68.0/24
+Home LAN 192.168.68.0/22
         |
-        +-- pi4mB01 / 192.168.68.101
-        +-- pi4mB02 / 192.168.68.102
-        +-- pi4mB03 / 192.168.68.103
-        +-- pi4mB04 / 192.168.68.104
+        +-- TP-Link TL-SG108E Ethernet switch
+            |
+            +-- pi4mB01 / eth0 / 192.168.68.101
+            +-- pi4mB02 / eth0 / 192.168.68.102
+            +-- pi4mB03 / eth0 / 192.168.68.103
+            +-- pi4mB04 / eth0 / 192.168.68.104
 ```
 
 Current node inventory:
@@ -76,6 +81,10 @@ K3s cluster
 
 The nodes are addressed through DHCP reservations on the home LAN. Ansible stores the current host IP addresses in `ansible/inventories/home/host_vars/`.
 
+The nodes report the current LAN subnet as `192.168.68.0/22` and use gateway `192.168.68.1`.
+
+Wi-Fi is disabled through Ansible on dedicated cluster nodes. Ethernet must be operational before Ansible changes Wi-Fi state.
+
 ## Design Decisions
 
 ### Raspberry Pi OS Lite for node operating system
@@ -94,11 +103,17 @@ Hostnames such as `pi4mB01` identify physical machines. Service names will use D
 
 The current platform uses `pi4mB01` as the only K3s control-plane node. High availability is a future improvement, not part of the current implementation.
 
+### Wired Ethernet for cluster nodes
+
+The cluster uses wired Ethernet through the TP-Link TL-SG108E switch as the normal production transport. This supports Kubernetes node communication, MetalLB Layer 2 service exposure and future storage or compute traffic.
+
 ## Best Practices
 
 - keep hostnames stable and tied to hardware identity
 - keep DHCP reservations aligned with Ansible host variables
 - manage baseline configuration through Ansible
+- keep cluster nodes connected through wired Ethernet
+- keep Wi-Fi disabled during normal operation
 - avoid publishing services through machine hostnames
 - verify node health before introducing additional platform layers
 - document hardware role changes when they happen
@@ -121,3 +136,5 @@ Planned expansion includes:
 - [Roadmap](../overview/roadmap.md)
 - [Ansible](ansible.md)
 - [Kubernetes](kubernetes.md)
+- [Networking](networking.md)
+- [ADR-0009 Wired Network for Cluster Nodes](../decisions/ADR-0009-wired-network-for-cluster-nodes.md)

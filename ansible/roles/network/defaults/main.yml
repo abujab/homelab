@@ -1,0 +1,13 @@
+---
+# ==============================================================================
+# Role defaults: network
+#
+# Purpose
+# -------
+# Define the wired network baseline expected for Kubernetes cluster nodes.
+# ==============================================================================
+
+network_ethernet_interface: eth0
+network_wifi_interface: wlan0
+network_expected_gateway: 192.168.68.1
+network_disable_wifi: true
