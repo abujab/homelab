@@ -96,6 +96,7 @@ Completed:
 
 - MetalLB
 - Pi-hole internal DNS
+- Traefik ingress controller
 - `.home.arpa` naming
 - service discovery
 - IBM ELM DNS entry
@@ -106,7 +107,6 @@ Completed:
 
 Remaining future work:
 
-- ingress controller
 - TLS certificate management
 - additional service records
 

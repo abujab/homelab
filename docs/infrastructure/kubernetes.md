@@ -20,6 +20,7 @@ This document covers:
 - Metrics Server
 - Local Path Provisioner
 - disabled Traefik and ServiceLB
+- repository-managed Traefik ingress
 - worker labels
 - verification commands
 
@@ -108,7 +109,9 @@ The K3s server is installed with:
 
 ServiceLB is disabled so that LAN load balancing can be introduced intentionally, likely through MetalLB.
 
-Traefik is disabled so ingress can be selected and documented deliberately in a future networking sprint.
+Traefik is disabled so ingress can be selected and documented deliberately outside the K3s packaged component.
+
+Repository-managed Traefik is now deployed separately through the official Helm chart in the `ingress` namespace.
 
 ## Design Decisions
 
@@ -120,9 +123,9 @@ K3s was selected because it is lightweight, ARM-friendly and operationally simpl
 
 The current cluster uses a single control-plane node. This is simpler for the initial platform and sufficient for the current documentation and infrastructure foundation.
 
-### Defer ingress and load balancing
+### Repository-managed ingress and load balancing
 
-Ingress and LAN load balancing are not enabled by default. They will be introduced as explicit architecture decisions in the networking foundation.
+K3s ServiceLB and packaged Traefik remain disabled. MetalLB provides LAN LoadBalancer IPs, and repository-managed Traefik provides Kubernetes ingress.
 
 ### Use labels for readable node roles
 
@@ -136,15 +139,12 @@ Worker labels make the node list easier to read and prepare the platform for fut
 - verify system components before deploying applications
 - avoid imperative workload changes where declarative manifests are practical
 - use labels to express workload placement intent
-- introduce ingress, load balancing and DNS as documented platform capabilities
+- manage ingress, load balancing and DNS as documented platform capabilities
 
 ## Future Improvements
 
 Planned Kubernetes improvements include:
 
-- MetalLB for LAN load balancer IPs
-- ingress controller selection and deployment
-- `.home.arpa` service naming
 - TLS certificate management
 - persistent storage evaluation
 - GitOps-based workload delivery
@@ -165,6 +165,7 @@ kubectl --kubeconfig ansible/kubeconfig top nodes
 - [Raspberry Pi Cluster](raspberry-pi-cluster.md)
 - [Ansible](ansible.md)
 - [Networking](networking.md)
+- [Ingress](ingress.md)
 - [Storage](storage.md)
 - [Security](security.md)
 - [Architecture](../overview/architecture.md)
