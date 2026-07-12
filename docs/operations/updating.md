@@ -16,13 +16,14 @@ This document covers:
 - activating the Python environment
 - updating documentation
 - applying networking manifests
+- applying ingress manifests
 - running `update.yml`
 - running `baseline.yml`
 - verification steps
 - reviewing Git status
 - committing infrastructure or documentation changes
 
-This document does not define Kubernetes application upgrade procedures. Application operations will be documented when applications are introduced.
+This document covers the current platform workloads. Future production application operations will be documented when those applications are introduced.
 
 ## Background
 
@@ -156,7 +157,35 @@ dig @192.168.68.200 openai.com +short
 dig @192.168.68.200 pihole.home.arpa +short
 ```
 
-### 10. Review changes
+### 10. Verify ingress
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get pods -n ingress
+kubectl --kubeconfig ansible/kubeconfig get svc traefik -n ingress
+kubectl --kubeconfig ansible/kubeconfig get ingress -A
+dig @192.168.68.200 test.home.arpa +short
+curl http://test.home.arpa
+```
+
+If the local workstation resolver is not using Pi-hole, use a direct Host
+header check for ingress routing:
+
+```bash
+curl -H 'Host: test.home.arpa' http://192.168.68.201
+```
+
+If the Traefik chart values changed, reapply Traefik:
+
+```bash
+helm repo update traefik
+helm upgrade --install traefik traefik/traefik \
+  --version 41.0.2 \
+  --namespace ingress \
+  --values kubernetes/platform/ingress/values.yaml \
+  --kubeconfig ansible/kubeconfig
+```
+
+### 11. Review changes
 
 ```bash
 git status --short
@@ -193,6 +222,7 @@ MkDocs builds are part of the maintenance workflow because documentation is part
 - keep SSH keys loaded in `ssh-agent`
 - verify the cluster after node updates
 - verify MetalLB and Pi-hole after networking changes
+- verify Traefik and test ingress after ingress changes
 - build documentation before committing documentation changes
 
 ## Future Improvements
@@ -211,4 +241,5 @@ Future maintenance improvements may include:
 - [Troubleshooting](troubleshooting.md)
 - [Ansible](../infrastructure/ansible.md)
 - [Kubernetes](../infrastructure/kubernetes.md)
+- [Ingress](../infrastructure/ingress.md)
 - [Repository Structure](../overview/repository.md)

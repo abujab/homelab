@@ -19,8 +19,8 @@ This document covers:
 - Wi-Fi disablement
 - MetalLB LoadBalancer address pool
 - Pi-hole internal DNS
+- Traefik ingress endpoint
 - `.home.arpa` DNS naming
-- future ingress plan
 - IBM ELM future DNS target
 
 This document does not define a final production network architecture. VLANs, segmentation, TLS automation and external access are future topics.
@@ -38,6 +38,8 @@ The Raspberry Pi nodes are reached by reserved LAN addresses. Ansible and kubect
 HomeLab now exposes platform services on the LAN through MetalLB and uses Pi-hole as the first internal DNS service.
 
 All dedicated Raspberry Pi Kubernetes nodes use wired Ethernet through a TP-Link TL-SG108E switch. Wi-Fi is disabled through Ansible for normal operation.
+
+Traefik provides the shared HTTP and HTTPS ingress endpoint for future web applications.
 
 ## Architecture / Implementation
 
@@ -58,6 +60,7 @@ Home LAN 192.168.68.0/22
         |
         +-- MetalLB service pool / 192.168.68.200-192.168.68.220
             +-- pihole.home.arpa / 192.168.68.200
+            +-- test.home.arpa / 192.168.68.201 / Traefik ingress
 ```
 
 Current DHCP reservations:
@@ -168,6 +171,38 @@ kubernetes/platform/networking/pihole/secret.yaml
 
 This should move to a stronger secrets-management model before broader service deployment.
 
+### Traefik ingress
+
+Traefik provides the shared Kubernetes ingress endpoint.
+
+Current configuration:
+
+| Setting | Value |
+|---------|-------|
+| Namespace | `ingress` |
+| Service type | `LoadBalancer` |
+| Service IP | `192.168.68.201` |
+| IngressClass | `traefik` |
+| HTTP port | `80` |
+| HTTPS port | `443` |
+| Dashboard exposure | Not exposed |
+
+The implementation lives in:
+
+```text
+kubernetes/platform/ingress/
+```
+
+The initial validation route is:
+
+```text
+test.home.arpa -> 192.168.68.201
+```
+
+Pi-hole resolves application hostnames to the Traefik IP. Traefik then uses
+Ingress rules and HTTP host headers to route requests to internal Kubernetes
+Services.
+
 ### Service names
 
 Current service names:
@@ -175,6 +210,7 @@ Current service names:
 | Name | IP Address | Purpose |
 |------|------------|---------|
 | pihole.home.arpa | 192.168.68.200 | Pi-hole DNS and web UI |
+| test.home.arpa | 192.168.68.201 | Traefik ingress validation route |
 
 Reserved future names:
 
@@ -218,9 +254,11 @@ MetalLB Layer 2 service exposure depends on reliable Ethernet and ARP behavior. 
 
 Wi-Fi is disabled through NetworkManager rather than by removing packages, deleting profiles or blacklisting kernel modules. This keeps emergency recovery possible while preserving the managed production baseline.
 
-### Defer ingress
+### Shared ingress endpoint
 
-Ingress is still planned but not currently installed. DNS and LoadBalancer support were introduced first so future ingress work can publish stable names.
+Traefik is the standard shared ingress endpoint for HomeLab web applications.
+Future applications should normally use a `ClusterIP` Service and an `Ingress`
+resource instead of receiving their own external LoadBalancer IP.
 
 ## Best Practices
 
@@ -233,6 +271,7 @@ Ingress is still planned but not currently installed. DNS and LoadBalancer suppo
 - introduce load balancer IP pools intentionally
 - document every service name as it is introduced
 - verify name resolution before publishing dependent services
+- publish web applications through Traefik ingress when direct LAN exposure is not required
 - keep service IPs in the MetalLB pool out of DHCP assignment
 - create the Pi-hole administrative password Secret outside Git
 - move administrative passwords to a stronger secrets-management model before exposing more services
@@ -241,8 +280,6 @@ Ingress is still planned but not currently installed. DNS and LoadBalancer suppo
 
 Planned networking work includes:
 
-- ingress controller deployment
-- first stable internal service URLs
 - IBM ELM publication through `elm.home.arpa`
 - TLS certificate management
 - additional `.home.arpa` service records
@@ -259,15 +296,19 @@ ansible pis -m shell -a "ip route show default"
 ansible pis -m command -a "nmcli radio wifi"
 dig @192.168.68.200 openai.com +short
 dig @192.168.68.200 pihole.home.arpa +short
+dig @192.168.68.200 test.home.arpa +short
 curl -I http://192.168.68.200/admin/
+curl http://test.home.arpa
 ```
 
 ## Related Documents
 
 - [Raspberry Pi Cluster](raspberry-pi-cluster.md)
 - [Kubernetes](kubernetes.md)
+- [Ingress](ingress.md)
 - [Security](security.md)
 - [Architecture](../overview/architecture.md)
 - [Roadmap](../overview/roadmap.md)
 - [ADR-0008 Networking Foundation](../decisions/ADR-0008-networking-foundation.md)
 - [ADR-0009 Wired Network for Cluster Nodes](../decisions/ADR-0009-wired-network-for-cluster-nodes.md)
+- [ADR-0010 Ingress Foundation](../decisions/ADR-0010-ingress-foundation.md)

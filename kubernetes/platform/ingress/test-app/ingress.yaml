@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whoami
+  namespace: ingress
+  labels:
+    app.kubernetes.io/name: whoami
+    app.kubernetes.io/part-of: homelab-ingress-test
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: test.home.arpa
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: whoami
+                port:
+                  name: http

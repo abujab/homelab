@@ -3,15 +3,15 @@
 **Project:** HomeLab  
 **Owner:** Abdul Jabbar  
 **Status:** Active Development  
-**Last Updated:** 2026-07-11
+**Last Updated:** 2026-07-12
 
 ---
 
 ## Current Platform State
 
-HomeLab has completed its first five engineering implementation sprints and the first three documentation sprints.
+HomeLab has completed its first six engineering implementation sprints and the first three documentation sprints.
 
-The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, Ansible automation and MkDocs Material documentation.
+The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, Traefik ingress, Ansible automation and MkDocs Material documentation.
 
 ---
 
@@ -89,6 +89,26 @@ Completed:
 - Pi-hole UI and DNS verified from the LAN
 - ADR-0009 created
 
+### Infrastructure Sprint 6 — Ingress Foundation
+
+Status: Complete
+
+Completed:
+
+- Traefik selected as the standard Kubernetes Ingress Controller
+- official Traefik Helm chart pinned to version `41.0.2`
+- Traefik app version pinned through the chart to `v3.7.6`
+- dedicated `ingress` namespace created
+- Traefik deployed with two replicas
+- pod anti-affinity preference configured across Kubernetes nodes
+- LoadBalancer Service assigned MetalLB IP `192.168.68.201`
+- HTTP and HTTPS entry points exposed on ports `80` and `443`
+- Traefik dashboard kept unexposed
+- `traefik` IngressClass created
+- `traefik/whoami` test application deployed
+- `test.home.arpa` configured for ingress validation
+- ADR-0010 created
+
 ### Documentation Sprint 1 — Overview Foundation
 
 Status: Complete
@@ -157,6 +177,7 @@ Current platform service IPs:
 | Service | DNS Name | IP Address | Status |
 |---------|----------|------------|--------|
 | Pi-hole | pihole.home.arpa | 192.168.68.200 | Ready |
+| Traefik ingress | test.home.arpa | 192.168.68.201 | Ready |
 
 Current LoadBalancer pool:
 
@@ -185,11 +206,13 @@ Completed sections:
 - Ansible
 - Kubernetes
 - Networking
+- Ingress
 - Storage
 - Security
 - Operations
 - Bootstrap
 - Updating
+- Ingress
 - Rebuilding
 - Troubleshooting
 - Backup
@@ -204,6 +227,10 @@ Next documentation area:
 
 No blocking technical risks identified.
 
+Known ingress risk:
+
+- TLS is not implemented yet. HTTP ingress is suitable only for current internal validation and must be followed by the TLS foundation sprint before sensitive web applications are exposed.
+
 Known documentation risk:
 
 - Reference data such as inventory, naming, IP addressing and software versions should be consolidated in the planned reference documentation sprint.
@@ -212,6 +239,6 @@ Known documentation risk:
 
 ## Next Work Package
 
-Documentation Sprint 4 — Reference Documentation.
+Infrastructure Sprint 7 — TLS Foundation.
 
 Create `work-orders/CURRENT.md` when the next work order is prepared.

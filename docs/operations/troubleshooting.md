@@ -704,6 +704,109 @@ Verification:
 
 The test pod should receive DNS answers from `192.168.68.200`.
 
+## Ingress
+
+### test.home.arpa does not resolve from the workstation
+
+Problem:
+
+`dig test.home.arpa` returns no answer or `curl http://test.home.arpa` reports
+that the host cannot be resolved.
+
+Cause:
+
+The workstation or browser client is not using Pi-hole as its DNS resolver.
+
+Resolution:
+
+First verify that Pi-hole has the record:
+
+```bash
+dig @192.168.68.200 test.home.arpa +short
+```
+
+If this returns `192.168.68.201`, update the client or router DNS configuration
+so the client uses Pi-hole for `.home.arpa` names.
+
+Verification:
+
+```bash
+dig test.home.arpa +short
+```
+
+Expected result:
+
+```text
+192.168.68.201
+```
+
+### Traefik Service has no external IP
+
+Problem:
+
+The Traefik Service remains pending or does not receive `192.168.68.201`.
+
+Cause:
+
+MetalLB is not running, the address pool is missing, or another Service is
+already using the requested IP.
+
+Resolution:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get pods -n metallb-system
+kubectl --kubeconfig ansible/kubeconfig get ipaddresspools -A
+kubectl --kubeconfig ansible/kubeconfig get svc -A
+kubectl --kubeconfig ansible/kubeconfig describe svc traefik -n ingress
+```
+
+Verification:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get svc traefik -n ingress
+```
+
+Expected external IP:
+
+```text
+192.168.68.201
+```
+
+### Ingress route returns 404
+
+Problem:
+
+DNS resolves and the Traefik Service is reachable, but the request returns
+`404`.
+
+Cause:
+
+The request Host header does not match an Ingress rule, or Traefik has not
+accepted the `traefik` IngressClass route.
+
+Resolution:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get ingressclass
+kubectl --kubeconfig ansible/kubeconfig get ingress -A
+kubectl --kubeconfig ansible/kubeconfig describe ingress whoami -n ingress
+kubectl --kubeconfig ansible/kubeconfig logs deployment/traefik -n ingress
+```
+
+If local DNS is not configured yet, test with an explicit Host header:
+
+```bash
+curl -H 'Host: test.home.arpa' http://192.168.68.201
+```
+
+Verification:
+
+The response should contain:
+
+```text
+Hostname:
+```
+
 ## Documentation
 
 ### MkDocs virtual environment not active
@@ -792,6 +895,7 @@ Each issue includes a verification step so the operator can confirm the result.
 
 - verify SSH before debugging Ansible
 - verify Ansible before debugging Kubernetes installation
+- verify DNS before debugging ingress routing
 - run playbooks from the `ansible/` directory
 - use `ssh-agent` for encrypted keys
 - preserve node hostnames and reserved IPs
@@ -815,4 +919,5 @@ Future troubleshooting improvements may include:
 - [Rebuilding](rebuilding.md)
 - [Ansible](../infrastructure/ansible.md)
 - [Kubernetes](../infrastructure/kubernetes.md)
+- [Ingress](../infrastructure/ingress.md)
 - [Security](../infrastructure/security.md)

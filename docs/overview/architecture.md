@@ -42,6 +42,7 @@ The cluster was built in phases:
 7. verify Kubernetes nodes and system pods
 8. introduce MetalLB and Pi-hole networking
 9. enforce wired Ethernet as the cluster node transport
+10. introduce Traefik ingress
 
 The current Kubernetes cluster is healthy.
 
@@ -104,12 +105,14 @@ HomeLab platform networking currently provides:
 
 - MetalLB Layer 2 LoadBalancer support
 - Pi-hole internal DNS
+- Traefik ingress
 - `.home.arpa` service naming
 - `pihole.home.arpa` at `192.168.68.200`
+- `test.home.arpa` at `192.168.68.201`
 - wired Ethernet node transport
 - Wi-Fi disabled on dedicated cluster nodes
 
-Traefik and ServiceLB were disabled during K3s installation so that ingress and load balancing could be introduced intentionally. MetalLB now provides the first LAN LoadBalancer implementation. Ingress remains future work.
+Traefik and ServiceLB were disabled during K3s installation so that ingress and load balancing could be introduced intentionally. MetalLB provides LAN LoadBalancer support. Repository-managed Traefik now provides the shared ingress endpoint.
 
 ### Target hybrid topology
 
@@ -166,6 +169,10 @@ Networking services such as MetalLB and DNS are introduced before application se
 
 Dedicated cluster nodes use wired Ethernet for Kubernetes, MetalLB and platform-service traffic. Raspberry Pi Wi-Fi is retained only as an exceptional recovery option and is disabled by the managed baseline.
 
+### Traefik as shared ingress
+
+Traefik is the standard Kubernetes ingress controller. Future web applications should normally publish through host-based Ingress resources instead of receiving individual LoadBalancer IPs.
+
 ---
 
 ## Best Practices
@@ -176,6 +183,7 @@ Dedicated cluster nodes use wired Ethernet for Kubernetes, MetalLB and platform-
 - avoid hardcoded IPs in application configuration
 - prefer service DNS names over machine names
 - use wired Ethernet for cluster node transport
+- publish web applications through shared ingress where practical
 - document every new platform capability
 - verify each infrastructure layer before building the next one
 
@@ -185,7 +193,6 @@ Dedicated cluster nodes use wired Ethernet for Kubernetes, MetalLB and platform-
 
 Near-term architecture improvements:
 
-- ingress controller
 - TLS certificate management
 - additional `.home.arpa` service records
 
@@ -206,3 +213,4 @@ Longer-term improvements:
 - [Vision](vision.md)
 - [Repository Structure](repository.md)
 - [Roadmap](roadmap.md)
+- [Ingress](../infrastructure/ingress.md)

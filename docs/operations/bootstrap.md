@@ -25,6 +25,7 @@ This document covers:
 - baseline playbook execution
 - K3s installation
 - networking foundation installation
+- ingress foundation installation
 - wired network baseline validation
 - cluster verification
 - MkDocs setup
@@ -288,7 +289,71 @@ Expected result:
 - public DNS resolves through Pi-hole
 - `pihole.home.arpa` resolves to `192.168.68.200`
 
-### 13. Verify MkDocs
+### 13. Install the ingress foundation
+
+Add and update the official Traefik Helm repository:
+
+```bash
+helm repo add traefik https://traefik.github.io/charts
+helm repo update traefik
+```
+
+Create the ingress namespace:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/ingress/namespace.yaml
+```
+
+Install Traefik:
+
+```bash
+helm upgrade --install traefik traefik/traefik \
+  --version 41.0.2 \
+  --namespace ingress \
+  --values kubernetes/platform/ingress/values.yaml \
+  --kubeconfig ansible/kubeconfig
+```
+
+Apply the ingress test application:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/ingress/test-app/deployment.yaml
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/ingress/test-app/service.yaml
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/ingress/test-app/ingress.yaml
+```
+
+Wait for rollouts:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig rollout status deployment/traefik -n ingress --timeout=300s
+kubectl --kubeconfig ansible/kubeconfig rollout status deployment/whoami -n ingress --timeout=300s
+```
+
+Verify ingress:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get pods -n ingress -o wide
+kubectl --kubeconfig ansible/kubeconfig get svc traefik -n ingress
+kubectl --kubeconfig ansible/kubeconfig get ingress -A
+dig @192.168.68.200 test.home.arpa +short
+curl http://test.home.arpa
+```
+
+Expected result:
+
+- two Traefik pods are running
+- Traefik has LoadBalancer IP `192.168.68.201`
+- `test.home.arpa` resolves to `192.168.68.201`
+- `curl http://test.home.arpa` returns a `whoami` response
+
+If the management workstation is not yet using Pi-hole as its DNS resolver,
+validate routing directly while preserving the Host header:
+
+```bash
+curl -H 'Host: test.home.arpa' http://192.168.68.201
+```
+
+### 14. Verify MkDocs
 
 From the repository root:
 
@@ -330,6 +395,8 @@ Dedicated cluster nodes use wired Ethernet through the TP-Link TL-SG108E switch.
 
 MetalLB and Pi-hole are deployed from declarative manifests under `kubernetes/platform/networking/`.
 
+Traefik is deployed from the official Helm chart with repository-managed values under `kubernetes/platform/ingress/`.
+
 The Pi-hole administrative password Secret is created locally outside Git until a stronger secrets-management design is introduced.
 
 ## Best Practices
@@ -340,6 +407,7 @@ The Pi-hole administrative password Secret is created locally outside Git until 
 - run `baseline.yml` before `k3s.yml`
 - validate one node before applying network changes to the full cluster
 - apply MetalLB before Pi-hole
+- apply MetalLB and Pi-hole before Traefik ingress
 - verify the Kubernetes cluster before deploying services
 - verify DNS through Pi-hole before depending on `.home.arpa` service names
 - keep the documentation build passing after documentation changes
@@ -358,6 +426,7 @@ Future bootstrap improvements may include:
 ## Related Documents
 
 - [Raspberry Pi Cluster](../infrastructure/raspberry-pi-cluster.md)
+- [Ingress](../infrastructure/ingress.md)
 - [Ansible](../infrastructure/ansible.md)
 - [Kubernetes](../infrastructure/kubernetes.md)
 - [Networking](../infrastructure/networking.md)
