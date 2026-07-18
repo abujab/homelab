@@ -174,15 +174,14 @@ review_history="$(jq -er \
     | select(
         .author.login == $reviewer
         and .submittedAt <= $approved_at
-        and (.body | test("(?m)^## .*Review"))
-        and (.body | contains("**Result:"))
+        and (.body | gsub("^\\s+|\\s+$"; "") | length >= 120)
       )]
   | sort_by(.submittedAt)
   | map(.body)
   | select(length > 0)
   | join("\n\n---\n\n")
 ' <<< "${pr_json}")" || \
-  die "PR #${pr_number} has no structured architecture review history"
+  die "PR #${pr_number} has no substantive architecture review history"
 
 highest_id="$(
   find "${REVIEWS_DIR}" -maxdepth 1 -type f -name 'AR-[0-9][0-9][0-9][0-9]-*.md' \
@@ -216,7 +215,7 @@ cat > "${temporary_file}" <<EOF
 ## Review History
 
 The final-head approval is recorded in the metadata above. Terse approval text
-is intentionally omitted; the substantive structured reviews follow.
+is intentionally omitted; the substantive reviews follow.
 
 ${review_history}
 EOF
