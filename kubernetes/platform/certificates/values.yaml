@@ -1,0 +1,12 @@
+# cert-manager Helm values for HomeLab certificate automation.
+#
+# Chart source: oci://quay.io/jetstack/charts/cert-manager
+# Chart version: v1.21.0
+# App version: v1.21.0
+# CRDs: installed by Helm with crds.enabled=true
+
+crds:
+  enabled: true
+
+prometheus:
+  enabled: false

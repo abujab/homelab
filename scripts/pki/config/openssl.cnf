@@ -1,0 +1,19 @@
+[ ca ]
+default_ca = homelab_ca
+
+[ homelab_ca ]
+database = $ENV::HOMELAB_CA_DATABASE
+serial = $ENV::HOMELAB_CA_SERIAL
+new_certs_dir = $ENV::HOMELAB_CA_ISSUED
+certificate = $ENV::HOMELAB_CA_CERT
+private_key = $ENV::HOMELAB_CA_KEY
+default_md = sha256
+policy = homelab_policy
+copy_extensions = copy
+unique_subject = no
+
+[ homelab_policy ]
+countryName = optional
+organizationName = optional
+organizationalUnitName = optional
+commonName = supplied

@@ -3,15 +3,15 @@
 **Project:** HomeLab  
 **Owner:** Abdul Jabbar  
 **Status:** Active Development  
-**Last Updated:** 2026-07-12
+**Last Updated:** 2026-07-18
 
 ---
 
 ## Current Platform State
 
-HomeLab has completed its first six engineering implementation sprints and the first three documentation sprints.
+HomeLab has completed its first seven engineering implementation sprints and the first three documentation sprints.
 
-The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, Traefik ingress, Ansible automation and MkDocs Material documentation.
+The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, trusted Traefik HTTPS, automated cert-manager certificate lifecycle, Ansible automation and MkDocs Material documentation.
 
 ---
 
@@ -109,6 +109,25 @@ Completed:
 - `test.home.arpa` configured for ingress validation
 - ADR-0010 created
 
+### Infrastructure Sprint 7 — PKI and TLS Foundation
+
+Status: Complete
+
+Completed:
+
+- private two-tier PKI created with an offline Root CA and separate Server and Client Issuing CAs
+- Root CA created as `Abdul HomeLab Root CA`, valid until 2046-07-13
+- Server Issuing CA created as `Abdul HomeLab Server Issuing CA`, valid until 2036-07-15
+- Client Issuing CA created as `Abdul HomeLab Client Issuing CA`, valid until 2036-07-15
+- cert-manager chart and application version `v1.21.0` deployed with Helm-managed CRDs
+- `homelab-server-ca` ClusterIssuer verified `Ready=True`
+- 90-day `test.home.arpa` certificate issued with DNS SAN and server-authentication usage
+- Traefik configured for TLS termination and permanent HTTP-to-HTTPS redirection
+- trusted HTTPS verified with the HomeLab Root CA
+- certificate reissuance and TLS Secret rotation verified without changing the system clock
+- Root CA client distribution documented; installation remains operator-controlled and pending by platform
+- ADR-0011 created
+
 ### Documentation Sprint 1 — Overview Foundation
 
 Status: Complete
@@ -178,6 +197,7 @@ Current platform service IPs:
 |---------|----------|------------|--------|
 | Pi-hole | pihole.home.arpa | 192.168.68.200 | Ready |
 | Traefik ingress | test.home.arpa | 192.168.68.201 | Ready |
+| cert-manager | Kubernetes internal | ClusterIP | Ready |
 
 Current LoadBalancer pool:
 
@@ -216,6 +236,8 @@ Completed sections:
 - Rebuilding
 - Troubleshooting
 - Backup
+- PKI
+- Certificates
 
 Next documentation area:
 
@@ -227,9 +249,10 @@ Next documentation area:
 
 No blocking technical risks identified.
 
-Known ingress risk:
+Known PKI risk:
 
-- TLS is not implemented yet. HTTP ingress is suitable only for current internal validation and must be followed by the TLS foundation sprint before sensitive web applications are exposed.
+- Root CA trust installation is still operator-controlled and pending on each client platform; clients without the Root CA will report the private certificate chain as untrusted.
+- CA material requires two verified encrypted offline backups in separate locations; Kubernetes and the management workstation are not sufficient backup targets.
 
 Known documentation risk:
 
@@ -239,6 +262,6 @@ Known documentation risk:
 
 ## Next Work Package
 
-Infrastructure Sprint 7 — TLS Foundation.
+Reference documentation sprint.
 
 Create `work-orders/CURRENT.md` when the next work order is prepared.

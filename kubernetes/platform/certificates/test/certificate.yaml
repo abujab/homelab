@@ -1,0 +1,27 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: test-home-arpa
+  namespace: ingress
+  labels:
+    app.kubernetes.io/name: test-home-arpa
+    app.kubernetes.io/part-of: homelab-certificates
+spec:
+  secretName: test-home-arpa-tls
+  commonName: test.home.arpa
+  dnsNames:
+    - test.home.arpa
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+  duration: 2160h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 3072
+    rotationPolicy: Always
+  issuerRef:
+    name: homelab-server-ca
+    kind: ClusterIssuer
+    group: cert-manager.io

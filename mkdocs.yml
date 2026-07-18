@@ -58,12 +58,14 @@ nav:
       - Kubernetes: infrastructure/kubernetes.md
       - Networking: infrastructure/networking.md
       - Ingress: infrastructure/ingress.md
+      - PKI: infrastructure/pki.md
       - Storage: infrastructure/storage.md
       - Security: infrastructure/security.md
   - Operations:
       - Bootstrap: operations/bootstrap.md
       - Updating: operations/updating.md
       - Ingress: operations/ingress.md
+      - Certificates: operations/certificates.md
       - Rebuilding: operations/rebuilding.md
       - Troubleshooting: operations/troubleshooting.md
       - Backup: operations/backup.md

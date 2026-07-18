@@ -43,6 +43,7 @@ The cluster was built in phases:
 8. introduce MetalLB and Pi-hole networking
 9. enforce wired Ethernet as the cluster node transport
 10. introduce Traefik ingress
+11. introduce private PKI and trusted internal TLS
 
 The current Kubernetes cluster is healthy.
 
@@ -106,13 +107,19 @@ HomeLab platform networking currently provides:
 - MetalLB Layer 2 LoadBalancer support
 - Pi-hole internal DNS
 - Traefik ingress
+- cert-manager certificate automation
+- HomeLab private PKI
 - `.home.arpa` service naming
 - `pihole.home.arpa` at `192.168.68.200`
-- `test.home.arpa` at `192.168.68.201`
+- `test.home.arpa` at `192.168.68.201` over HTTPS
 - wired Ethernet node transport
 - Wi-Fi disabled on dedicated cluster nodes
 
 Traefik and ServiceLB were disabled during K3s installation so that ingress and load balancing could be introduced intentionally. MetalLB provides LAN LoadBalancer support. Repository-managed Traefik now provides the shared ingress endpoint.
+
+HomeLab uses an offline Root CA with separate Server and Client Issuing CAs.
+cert-manager uses only the Server Issuing CA to automate server certificates.
+Traefik terminates TLS and redirects HTTP traffic to HTTPS.
 
 ### Target hybrid topology
 
@@ -173,6 +180,12 @@ Dedicated cluster nodes use wired Ethernet for Kubernetes, MetalLB and platform-
 
 Traefik is the standard Kubernetes ingress controller. Future web applications should normally publish through host-based Ingress resources instead of receiving individual LoadBalancer IPs.
 
+### Private PKI for internal TLS
+
+The HomeLab Root CA is the private trust anchor for `home.arpa` services. The
+Root key remains offline and signs issuing CAs only. Server certificate
+automation is delegated to cert-manager through the Server Issuing CA.
+
 ---
 
 ## Best Practices
@@ -184,6 +197,7 @@ Traefik is the standard Kubernetes ingress controller. Future web applications s
 - prefer service DNS names over machine names
 - use wired Ethernet for cluster node transport
 - publish web applications through shared ingress where practical
+- use cert-manager issued TLS certificates for ingress services
 - document every new platform capability
 - verify each infrastructure layer before building the next one
 
@@ -193,7 +207,6 @@ Traefik is the standard Kubernetes ingress controller. Future web applications s
 
 Near-term architecture improvements:
 
-- TLS certificate management
 - additional `.home.arpa` service records
 
 Longer-term improvements:
@@ -214,3 +227,4 @@ Longer-term improvements:
 - [Repository Structure](repository.md)
 - [Roadmap](roadmap.md)
 - [Ingress](../infrastructure/ingress.md)
+- [PKI](../infrastructure/pki.md)

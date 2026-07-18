@@ -1,0 +1,10 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: homelab-server-ca
+  labels:
+    app.kubernetes.io/name: homelab-server-ca
+    app.kubernetes.io/part-of: homelab-certificates
+spec:
+  ca:
+    secretName: homelab-server-ca

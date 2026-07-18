@@ -23,8 +23,11 @@ This document covers:
 - rejoining K3s
 - verification
 - replacing the management workstation
+- restoring HomeLab PKI material
 
-This document does not define persistent application data restore procedures. The current platform does not yet host a documented persistent application backup model.
+This document does not define persistent application data restore procedures.
+The current platform does not yet host a documented persistent application
+backup model.
 
 ## Background
 
@@ -215,6 +218,43 @@ If kubeconfig must be refreshed, rerun the K3s playbook from `ansible/`:
 ansible-playbook playbooks/k3s.yml
 ```
 
+### 7. Restore PKI material
+
+Restore `HOMELAB_PKI_DIR` from encrypted offline backup. The default path is:
+
+```bash
+${HOME}/PKI/homelab
+```
+
+Verify the CA chain before recreating Kubernetes Secrets:
+
+```bash
+scripts/pki/verify-chain.sh
+```
+
+Do not regenerate the Root CA during normal workstation recovery. Regenerating
+the Root CA requires redistributing trust to every client.
+
+### 8. Recreate cert-manager runtime state
+
+After Kubernetes is reachable, reinstall cert-manager and recreate the Server
+Issuing CA Secret:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/certificates/namespace.yaml
+
+helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager \
+  --version v1.21.0 \
+  --namespace cert-manager \
+  --values kubernetes/platform/certificates/values.yaml \
+  --kubeconfig ansible/kubeconfig
+
+scripts/pki/create-server-ca-secret.sh --kubeconfig ansible/kubeconfig
+
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/certificates/issuers/homelab-server-ca.yaml
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/certificates/test/certificate.yaml
+```
+
 ## Design Decisions
 
 ### Node identity is preserved
@@ -233,6 +273,12 @@ The current platform has one K3s server. Worker nodes can be rejoined more easil
 
 The workstation can be rebuilt from the repository, but access depends on restoring or redistributing the operator SSH key.
 
+### PKI recovery preserves trust
+
+Restoring the existing Root CA preserves client trust. Replacing the Root CA is
+a separate security event because every trusted client must install the new Root
+certificate.
+
 ## Best Practices
 
 - document which node failed before making changes
@@ -243,6 +289,8 @@ The workstation can be rebuilt from the repository, but access depends on restor
 - verify Kubernetes after node replacement
 - avoid storing unique platform knowledge only on the workstation
 - keep the repository pushed to a remote Git server
+- restore PKI material from encrypted backup before recreating cert-manager CA
+  Secrets
 
 ## Future Improvements
 
@@ -253,11 +301,13 @@ Future recovery improvements should include:
 - documented control-plane replacement runbook
 - automated workstation bootstrap script
 - secrets recovery model
+- issuing CA replacement runbook
 - high-availability control-plane evaluation
 
 ## Related Documents
 
 - [Bootstrap](bootstrap.md)
+- [Certificate Operations](certificates.md)
 - [Backup](backup.md)
 - [Troubleshooting](troubleshooting.md)
 - [Raspberry Pi Cluster](../infrastructure/raspberry-pi-cluster.md)

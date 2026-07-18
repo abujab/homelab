@@ -17,6 +17,7 @@ This document covers:
 - Raspberry Pi baseline issues
 - Kubernetes issues
 - networking issues
+- certificate and HTTPS issues
 - documentation tooling issues
 
 This document does not replace future service-specific troubleshooting guides.
@@ -31,6 +32,8 @@ Most current operational issues fall into a small number of categories:
 - K3s kubeconfig and node naming
 - MetalLB and Pi-hole service exposure
 - wired Ethernet and Wi-Fi baseline
+- cert-manager certificate issuance
+- Traefik HTTPS routing
 - local Python and MkDocs environment setup
 
 ## Architecture / Implementation
@@ -881,6 +884,132 @@ Verification:
 mkdocs build
 ```
 
+## Certificates and HTTPS
+
+### ClusterIssuer is not ready
+
+Problem:
+
+`ClusterIssuer/homelab-server-ca` does not report `Ready=True`.
+
+Cause:
+
+The `homelab-server-ca` Secret may be missing from the `cert-manager`
+namespace, the certificate and private key may not match, or cert-manager may
+not be healthy.
+
+Resolution:
+
+Verify cert-manager and recreate the runtime Secret from external PKI material:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get pods -n cert-manager
+scripts/pki/create-server-ca-secret.sh --kubeconfig ansible/kubeconfig
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/certificates/issuers/homelab-server-ca.yaml
+```
+
+Verification:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get clusterissuer homelab-server-ca
+kubectl --kubeconfig ansible/kubeconfig describe clusterissuer homelab-server-ca
+```
+
+### Certificate is not issued
+
+Problem:
+
+`Certificate/test-home-arpa` does not report `Ready=True`.
+
+Cause:
+
+The ClusterIssuer may not be ready, the CertificateRequest may be denied or
+failed, or the target namespace may not exist.
+
+Resolution:
+
+Inspect the certificate and related requests:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig describe certificate test-home-arpa -n ingress
+kubectl --kubeconfig ansible/kubeconfig get certificaterequest -n ingress
+kubectl --kubeconfig ansible/kubeconfig describe certificaterequest -n ingress
+```
+
+Correct the issuer or Secret issue, then reapply:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply -f kubernetes/platform/certificates/test/certificate.yaml
+```
+
+Verification:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get secret test-home-arpa-tls -n ingress
+```
+
+### HTTPS certificate is not trusted
+
+Problem:
+
+`curl https://test.home.arpa/` or a browser reports an untrusted certificate.
+
+Cause:
+
+The HomeLab Root CA may not be installed in the client trust store, the wrong
+certificate may be served, or the client may be using a DNS path that does not
+reach Traefik.
+
+Resolution:
+
+Validate directly with the Root CA:
+
+```bash
+curl --resolve test.home.arpa:443:192.168.68.201 \
+  --cacert "${HOMELAB_PKI_DIR}/root/certs/homelab-root-ca.crt" \
+  https://test.home.arpa/
+```
+
+If this succeeds, install the Root CA into the client trust store and verify the
+fingerprint through a trusted channel.
+
+Verification:
+
+```bash
+curl https://test.home.arpa/
+```
+
+### HTTP does not redirect to HTTPS
+
+Problem:
+
+`http://test.home.arpa/` serves plain HTTP or does not redirect.
+
+Cause:
+
+Traefik may not have been upgraded with the entry-point redirection values.
+
+Resolution:
+
+Reapply the Traefik Helm values:
+
+```bash
+helm upgrade --install traefik traefik/traefik \
+  --version 41.0.2 \
+  --namespace ingress \
+  --values kubernetes/platform/ingress/values.yaml \
+  --kubeconfig ansible/kubeconfig
+```
+
+Verification:
+
+```bash
+curl --resolve test.home.arpa:80:192.168.68.201 \
+  -I http://test.home.arpa/
+```
+
+The response should contain a `Location` header for `https://test.home.arpa/`.
+
 ## Design Decisions
 
 ### Troubleshooting follows operational layers
@@ -895,12 +1024,13 @@ Each issue includes a verification step so the operator can confirm the result.
 
 - verify SSH before debugging Ansible
 - verify Ansible before debugging Kubernetes installation
-- verify DNS before debugging ingress routing
+- verify DNS and certificate readiness before debugging ingress routing
 - run playbooks from the `ansible/` directory
 - use `ssh-agent` for encrypted keys
 - preserve node hostnames and reserved IPs
 - use `kubectl --kubeconfig ansible/kubeconfig` from the repository root
 - build MkDocs after documentation changes
+- avoid `curl --insecure` and browser exceptions as permanent fixes
 
 ## Future Improvements
 
@@ -909,6 +1039,7 @@ Future troubleshooting improvements may include:
 - service-specific troubleshooting guides
 - Kubernetes event collection procedures
 - log collection commands
+- cert-manager event collection procedures
 - monitoring dashboard links
 - documented GitHub Pages deployment workflow
 
@@ -920,4 +1051,5 @@ Future troubleshooting improvements may include:
 - [Ansible](../infrastructure/ansible.md)
 - [Kubernetes](../infrastructure/kubernetes.md)
 - [Ingress](../infrastructure/ingress.md)
+- [Certificate Operations](certificates.md)
 - [Security](../infrastructure/security.md)

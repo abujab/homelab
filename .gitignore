@@ -14,3 +14,13 @@ site/
 
 # Local Kubernetes secrets
 kubernetes/platform/networking/pihole/secret.yaml
+
+# Local PKI material and generated Kubernetes secrets
+PKI/
+*.key
+*.csr
+*.srl
+*.p12
+*.pfx
+*.jks
+*.keystore

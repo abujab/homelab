@@ -20,8 +20,8 @@ This document covers:
 - the current test application
 - current limitations
 
-This document does not cover TLS automation, external internet exposure,
-authentication middleware or production application onboarding.
+This document does not cover external internet exposure, authentication
+middleware or production application onboarding.
 
 ## Background
 
@@ -45,7 +45,7 @@ Client browser
 |       |
 |       +-- answer: 192.168.68.201
 |
-+-- HTTP request to 192.168.68.201
++-- HTTPS request to 192.168.68.201
     |
     +-- MetalLB advertises Traefik Service IP
         |
@@ -73,6 +73,8 @@ Current ingress endpoint:
 | LoadBalancer IP | `192.168.68.201` |
 | HTTP port | `80` |
 | HTTPS port | `443` |
+| HTTP redirect | Redirects to HTTPS |
+| TLS certificate | `ingress/test-home-arpa-tls` |
 | Dashboard exposure | Not exposed |
 
 ### Relationship to Pi-hole
@@ -154,7 +156,11 @@ component.
 K3s ServiceLB remains disabled. MetalLB remains the LAN LoadBalancer
 implementation.
 
-TLS is deferred to the successor TLS foundation work order.
+TLS is terminated by Traefik using certificates issued by cert-manager from the
+HomeLab Server Issuing CA.
+
+HTTP-to-HTTPS redirection is configured at the Traefik `web` entry point so
+current ingress routes use HTTPS by default.
 
 No wildcard DNS records are created in this sprint.
 
@@ -163,15 +169,13 @@ No wildcard DNS records are created in this sprint.
 - publish web applications with `Ingress` resources
 - use `ClusterIP` Services behind ingress
 - point application DNS records at the Traefik LoadBalancer IP
-- keep the Traefik dashboard private until authentication and TLS exist
+- keep the Traefik dashboard private until authenticated access is designed
 - avoid allocating a new LoadBalancer IP for each web application
 - pin Helm chart versions in repository-managed configuration
+- use cert-manager managed TLS Secrets for ingress routes
 
 ## Future Improvements
 
-- private certificate authority
-- cert-manager or another certificate automation mechanism
-- HTTPS for `.home.arpa` applications
 - protected Traefik dashboard access
 - middleware standards for authentication and headers
 - production application ingress conventions
@@ -182,5 +186,6 @@ No wildcard DNS records are created in this sprint.
 - [Networking](networking.md)
 - [Kubernetes](kubernetes.md)
 - [Security](security.md)
+- [PKI](pki.md)
 - [Ingress Operations](../operations/ingress.md)
 - [ADR-0010 Ingress Foundation](../decisions/ADR-0010-ingress-foundation.md)
