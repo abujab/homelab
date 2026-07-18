@@ -44,9 +44,10 @@ the supplied work order and is not an archive-only PR. It accepts only an
 approval attached to the implementation PR's final head commit, assigns the
 next `AR-NNNN` identifier and records the reviewed head, merge commit, reviewer
 and approval timestamp. The final-head approval establishes the result, while
-the archive contains the reviewer's structured review history. Terse approval
-messages such as `approved` are intentionally excluded from the archived review
-content.
+the archive contains the reviewer's substantive review history. Review bodies
+must contain at least 120 non-padding characters, so terse approval messages
+such as `approved` are intentionally excluded without requiring a specific
+heading template.
 
 Commit the generated file and open a small review-archive PR. Reviews of that
 archive PR are not archived: archive-only PRs are explicitly rejected as source
