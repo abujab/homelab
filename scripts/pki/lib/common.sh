@@ -38,6 +38,34 @@ require_tools() {
   done
 }
 
+validate_dns_name() {
+  local name="$1"
+  local label
+  local -a labels
+
+  [[ -n "${name}" ]] || die "DNS name must not be empty"
+  [[ ${#name} -le 253 ]] || die "DNS name exceeds 253 characters: ${name}"
+  [[ "${name}" != *. ]] || die "DNS name must not end with a dot: ${name}"
+  [[ "${name}" =~ ^[A-Za-z0-9.-]+$ ]] || die "Invalid DNS name: ${name}"
+
+  IFS='.' read -r -a labels <<< "${name}"
+  for label in "${labels[@]}"; do
+    [[ ${#label} -ge 1 && ${#label} -le 63 ]] || \
+      die "DNS labels must contain between 1 and 63 characters: ${name}"
+    [[ "${label}" =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$ ]] || \
+      die "Invalid DNS label in name: ${name}"
+  done
+}
+
+validate_client_common_name() {
+  local name="$1"
+
+  [[ -n "${name}" ]] || die "Common Name must not be empty"
+  [[ ${#name} -le 128 ]] || die "Common Name exceeds 128 characters"
+  [[ "${name}" =~ ^[A-Za-z0-9][A-Za-z0-9._@-]*$ ]] || \
+    die "Common Name may contain only letters, numbers, dot, underscore, @ and hyphen"
+}
+
 real_path() {
   realpath -m "$1"
 }

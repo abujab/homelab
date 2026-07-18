@@ -179,6 +179,11 @@ Critical recovery set:
 - OpenSSL configuration and profiles
 - Root CA passphrase recovery information
 
+The OpenSSL database directories are retained for forward compatibility and
+must be backed up with the other CA state. Current signing uses
+`openssl x509 -CAcreateserial`, so these databases do not provide a complete
+issued-certificate history or revocation ledger.
+
 Backup requirements:
 
 - use encrypted offline backups

@@ -30,6 +30,10 @@ done
 [[ -n "${common_name}" ]] || die "--common-name is required"
 [[ "${#dns_names[@]}" -gt 0 ]] || die "At least one --dns-name is required"
 [[ "${days}" =~ ^[0-9]+$ ]] || die "--days must be numeric"
+validate_dns_name "${common_name}"
+for dns in "${dns_names[@]}"; do
+  validate_dns_name "${dns}"
+done
 
 require_tools openssl realpath
 assert_pki_dir_outside_repo
@@ -60,7 +64,6 @@ cat "${SCRIPT_DIR}/config/profiles/server-certificate.cnf" > "${tmp_ext}"
   echo "[ server_alt_names ]"
   index=1
   for dns in "${dns_names[@]}"; do
-    [[ -n "${dns}" ]] || die "Empty --dns-name value"
     echo "DNS.${index} = ${dns}"
     index=$((index + 1))
   done

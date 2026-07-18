@@ -81,6 +81,12 @@ Current certificate automation:
 Traefik terminates TLS for `test.home.arpa` by using the cert-manager managed
 TLS Secret. HTTP requests on port `80` redirect to HTTPS on port `443`.
 
+The external CA layout includes initialized OpenSSL database and serial files
+for future revocation support. The current scripts sign with `openssl x509`
+and `-CAcreateserial`, so the initialized database is reserved state rather
+than an authoritative issuance ledger. CRL and revocation infrastructure
+remain outside the current scope.
+
 ## Design Decisions
 
 The Root CA is excluded from Kubernetes so routine certificate issuance cannot

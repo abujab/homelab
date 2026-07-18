@@ -29,6 +29,11 @@ export HOMELAB_PKI_DIR=/secure/offline/path/homelab
 The scripts refuse to run if the resolved PKI directory is inside this
 repository.
 
+The CA directory layout initializes OpenSSL database and serial files so the
+state is available for a future revocation workflow. Current signing uses
+`openssl x509 -CAcreateserial`; these database files are therefore not the
+authoritative history of certificates issued during this work order.
+
 ## Architecture / Implementation
 
 Create the hierarchy:

@@ -27,6 +27,7 @@ done
 
 [[ -n "${common_name}" ]] || die "--common-name is required"
 [[ "${days}" =~ ^[0-9]+$ ]] || die "--days must be numeric"
+validate_client_common_name "${common_name}"
 
 require_tools openssl realpath
 assert_pki_dir_outside_repo
