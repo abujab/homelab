@@ -1,8 +1,5 @@
 # WO-0008 — Pi-hole Web Exposure and Application Ingress Standard
 
-````markdown
-# WO-0008 — Pi-hole Web Exposure and Application Ingress Standard
-
 ## Status
 
 Complete
@@ -642,30 +639,30 @@ The rollback must not require PKI regeneration.
 
 This work order is complete when all of the following are true:
 
-* [ ] Pi-hole DNS remains reachable at `192.168.68.200`.
-* [ ] TCP DNS works on port 53.
-* [ ] UDP DNS works on port 53.
-* [ ] Port 80 is no longer externally exposed by the Pi-hole LoadBalancer.
-* [ ] A separate Pi-hole Web ClusterIP Service exists.
-* [ ] The Web Service exposes only the required internal HTTP port.
-* [ ] `pihole.home.arpa` resolves to `192.168.68.201`.
-* [ ] A Traefik Ingress exists for `pihole.home.arpa`.
-* [ ] HTTP redirects to HTTPS.
-* [ ] The certificate reaches `Ready=True`.
-* [ ] The certificate contains `pihole.home.arpa` as a SAN.
-* [ ] The certificate is issued by the HomeLab Server Issuing CA.
-* [ ] The browser trusts the certificate without warnings.
-* [ ] The Pi-hole administration interface works through HTTPS.
-* [ ] Direct HTTP access through `192.168.68.200` is unavailable.
-* [ ] Existing Pi-hole DNS configuration and persistent data remain intact.
-* [ ] Automated validation covers the new exposure model.
-* [ ] Operational documentation is updated.
-* [ ] Architecture diagrams are updated where necessary.
-* [ ] A new ADR documents the application-exposure standard.
-* [ ] The ADR index is updated.
-* [ ] No private keys, certificates containing private material, or Kubernetes Secret values are committed.
-* [ ] The implementation is idempotent.
-* [ ] The rollback procedure is documented.
+* [x] Pi-hole DNS remains reachable at `192.168.68.200`.
+* [x] TCP DNS works on port 53.
+* [x] UDP DNS works on port 53.
+* [x] Port 80 is no longer externally exposed by the Pi-hole LoadBalancer.
+* [x] A separate Pi-hole Web ClusterIP Service exists.
+* [x] The Web Service exposes only the required internal HTTP port.
+* [x] `pihole.home.arpa` resolves to `192.168.68.201`.
+* [x] A Traefik Ingress exists for `pihole.home.arpa`.
+* [x] HTTP redirects to HTTPS.
+* [x] The certificate reaches `Ready=True`.
+* [x] The certificate contains `pihole.home.arpa` as a SAN.
+* [x] The certificate is issued by the HomeLab Server Issuing CA.
+* [x] The browser trusts the certificate without warnings.
+* [x] The Pi-hole administration interface works through HTTPS.
+* [x] Direct HTTP access through `192.168.68.200` is unavailable.
+* [x] Existing Pi-hole DNS configuration and persistent data remain intact.
+* [x] Automated validation covers the new exposure model.
+* [x] Operational documentation is updated.
+* [x] Architecture diagrams are updated where necessary.
+* [x] A new ADR documents the application-exposure standard.
+* [x] The ADR index is updated.
+* [x] No private keys, certificates containing private material, or Kubernetes Secret values are committed.
+* [x] The implementation is idempotent.
+* [x] The rollback procedure is documented.
 
 ## Implementation Constraints
 
@@ -738,9 +735,4 @@ Suggested release theme:
 
 ```text
 Pi-hole secure ingress and application exposure standard
-```
-
-```
-
-This makes **WO-0008** a focused platform-hardening sprint rather than starting observability prematurely. The next work order can then be **WO-0009 — Observability Foundation**, with Grafana becoming the first new application deployed according to this ADR.
 ```
