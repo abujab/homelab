@@ -24,8 +24,8 @@ Arguments:
   --repo OWNER/REPO GitHub repository. Defaults to the current repository.
   --help            Show this help text.
 
-The script refuses to archive a PR without an approved review and never
-overwrites an existing archive.
+The source implementation PR must already be merged. The script refuses stale
+approvals, archive-only PRs and existing work-order archives.
 EOF
 }
 
@@ -71,6 +71,7 @@ done
 [[ "${pr_number}" =~ ^[1-9][0-9]*$ ]] || die "--pr must be a positive number"
 [[ "${work_order}" =~ ^WO-[0-9]{4}-[a-z0-9]+(-[a-z0-9]+)*$ ]] || \
   die "--work-order must match WO-NNNN-lowercase-description"
+work_order_id="${work_order:0:7}"
 
 mkdir -p "${REVIEWS_DIR}"
 existing_archive="$(
@@ -88,16 +89,84 @@ if [[ -z "${repository}" ]]; then
   repository="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 fi
 [[ "${repository}" =~ ^[^/]+/[^/]+$ ]] || die "--repo must use OWNER/REPO format"
+repository_owner="${repository%%/*}"
+repository_name="${repository#*/}"
 
-review_json="$(gh pr view "${pr_number}" --repo "${repository}" \
-  --json number,reviews,url)"
+read -r -d '' review_query <<'GRAPHQL' || true
+query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      number
+      title
+      state
+      merged
+      headRefName
+      headRefOid
+      mergeCommit {
+        oid
+      }
+      files(first: 100) {
+        nodes {
+          path
+        }
+      }
+      reviews(last: 100) {
+        nodes {
+          state
+          body
+          submittedAt
+          author {
+            login
+          }
+          commit {
+            oid
+          }
+        }
+      }
+    }
+  }
+}
+GRAPHQL
 
-review_body="$(jq -er '
-  [.reviews[] | select(.state == "APPROVED" and (.body | length > 0))]
+review_json="$(gh api graphql \
+  -f query="${review_query}" \
+  -f owner="${repository_owner}" \
+  -f name="${repository_name}" \
+  -F number="${pr_number}")"
+
+pr_json="$(jq -cer '.data.repository.pullRequest' <<< "${review_json}")" || \
+  die "Pull request not found: ${repository}#${pr_number}"
+
+[[ "$(jq -r '.merged' <<< "${pr_json}")" == "true" ]] || \
+  die "PR #${pr_number} must be merged before its review is archived"
+
+pr_title="$(jq -r '.title' <<< "${pr_json}")"
+[[ "${pr_title}" == "${work_order_id}:"* ]] || \
+  die "PR #${pr_number} is not the implementation PR for ${work_order_id}"
+
+implementation_file_count="$(jq '[.files.nodes[] | select(.path | startswith("reviews/") | not)] | length' <<< "${pr_json}")"
+[[ "${implementation_file_count}" -gt 0 ]] || \
+  die "PR #${pr_number} is an archive-only PR and must not itself be archived"
+
+reviewed_head="$(jq -r '.headRefOid' <<< "${pr_json}")"
+merged_commit="$(jq -er '.mergeCommit.oid' <<< "${pr_json}")" || \
+  die "PR #${pr_number} has no merged commit"
+
+approval_json="$(jq -cer --arg head "${reviewed_head}" '
+  [.reviews.nodes[]
+    | select(
+        .state == "APPROVED"
+        and .commit.oid == $head
+        and (.body | length > 0)
+      )]
   | sort_by(.submittedAt)
   | last
-  | .body
-' <<< "${review_json}")" || die "PR #${pr_number} has no approved review body"
+' <<< "${pr_json}")" || \
+  die "PR #${pr_number} has no approval for final head ${reviewed_head}"
+
+review_body="$(jq -r '.body' <<< "${approval_json}")"
+reviewer="$(jq -r '.author.login' <<< "${approval_json}")"
+approval_timestamp="$(jq -r '.submittedAt' <<< "${approval_json}")"
 
 highest_id="$(
   find "${REVIEWS_DIR}" -maxdepth 1 -type f -name 'AR-[0-9][0-9][0-9][0-9]-*.md' \
@@ -114,7 +183,22 @@ archive_path="${REVIEWS_DIR}/${archive_id}-${work_order}.md"
 
 temporary_file="$(mktemp "${REVIEWS_DIR}/.${archive_id}.XXXXXX")"
 trap 'rm -f "${temporary_file}"' EXIT
-printf '%s\n' "${review_body}" > "${temporary_file}"
+cat > "${temporary_file}" <<EOF
+# Architecture Review Archive
+
+- **Architecture Review:** ${archive_id}
+- **Work Order:** ${work_order_id}
+- **Pull Request:** ${repository}#${pr_number}
+- **Reviewed Head:** \`${reviewed_head}\`
+- **Merged Commit:** \`${merged_commit}\`
+- **Reviewer:** ${reviewer}
+- **Approved:** ${approval_timestamp}
+- **Result:** Approved
+
+---
+
+${review_body}
+EOF
 chmod 0644 "${temporary_file}"
 mv "${temporary_file}" "${archive_path}"
 trap - EXIT
