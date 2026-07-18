@@ -164,9 +164,25 @@ approval_json="$(jq -cer --arg head "${reviewed_head}" '
 ' <<< "${pr_json}")" || \
   die "PR #${pr_number} has no approval for final head ${reviewed_head}"
 
-review_body="$(jq -r '.body' <<< "${approval_json}")"
 reviewer="$(jq -r '.author.login' <<< "${approval_json}")"
 approval_timestamp="$(jq -r '.submittedAt' <<< "${approval_json}")"
+
+review_history="$(jq -er \
+  --arg reviewer "${reviewer}" \
+  --arg approved_at "${approval_timestamp}" '
+  [.reviews.nodes[]
+    | select(
+        .author.login == $reviewer
+        and .submittedAt <= $approved_at
+        and (.body | test("(?m)^## .*Review"))
+        and (.body | contains("**Result:"))
+      )]
+  | sort_by(.submittedAt)
+  | map(.body)
+  | select(length > 0)
+  | join("\n\n---\n\n")
+' <<< "${pr_json}")" || \
+  die "PR #${pr_number} has no structured architecture review history"
 
 highest_id="$(
   find "${REVIEWS_DIR}" -maxdepth 1 -type f -name 'AR-[0-9][0-9][0-9][0-9]-*.md' \
@@ -197,7 +213,12 @@ cat > "${temporary_file}" <<EOF
 
 ---
 
-${review_body}
+## Review History
+
+The final-head approval is recorded in the metadata above. Terse approval text
+is intentionally omitted; the substantive structured reviews follow.
+
+${review_history}
 EOF
 chmod 0644 "${temporary_file}"
 mv "${temporary_file}" "${archive_path}"
