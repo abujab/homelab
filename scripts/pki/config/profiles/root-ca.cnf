@@ -1,0 +1,15 @@
+[ req ]
+distinguished_name = root_ca_dn
+prompt = no
+
+[ root_ca_dn ]
+C = DE
+O = Abdul HomeLab
+OU = PKI
+CN = Abdul HomeLab Root CA
+
+[ root_ca ]
+basicConstraints = critical, CA:TRUE, pathlen:1
+keyUsage = critical, keyCertSign, cRLSign
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always

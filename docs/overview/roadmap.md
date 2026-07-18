@@ -105,9 +105,15 @@ Completed:
 - wired Ethernet as cluster node transport
 - Wi-Fi disabled through Ansible
 
+Completed:
+
+- private PKI foundation
+- cert-manager certificate automation
+- trusted HTTPS for ingress validation
+- HTTP-to-HTTPS redirect
+
 Remaining future work:
 
-- TLS certificate management
 - additional service records
 
 ### Phase 6 — Observability

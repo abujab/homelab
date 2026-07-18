@@ -114,6 +114,7 @@ The following are not yet fully backed up by an implemented platform backup syst
 - Pi-hole persistent configuration restore
 - router DHCP reservation configuration
 - operator SSH private key
+- HomeLab PKI offline CA material
 
 ## Future backup targets
 
@@ -155,6 +156,41 @@ Future design must define:
 - how they are rotated
 - how cluster recovery works without committing secrets to Git
 
+### PKI
+
+Current state:
+
+HomeLab PKI material is generated outside Git under `HOMELAB_PKI_DIR`, which
+defaults to:
+
+```bash
+${HOME}/PKI/homelab
+```
+
+Critical recovery set:
+
+- Root CA private key
+- Root CA certificate
+- Server Issuing CA private key
+- Server Issuing CA certificate and chain
+- Client Issuing CA private key
+- Client Issuing CA certificate and chain
+- OpenSSL CA databases and serial files
+- OpenSSL configuration and profiles
+- Root CA passphrase recovery information
+
+Backup requirements:
+
+- use encrypted offline backups
+- maintain at least two copies in separate locations
+- do not rely only on the management workstation
+- do not rely only on Kubernetes Secrets
+- do not rely only on Git
+- do not rely on a single removable drive
+
+Normal cluster recovery restores the existing Server Issuing CA and recreates
+the cert-manager Secret. It must not regenerate the Root CA.
+
 ### Cluster configuration
 
 Kubernetes cluster configuration should eventually be represented declaratively through manifests, Helm values or GitOps.
@@ -195,6 +231,7 @@ Current recovery objectives:
 | K3s worker | Rejoin through Ansible |
 | K3s control plane | Rebuild from Ansible; server-state backup is future work |
 | Pi-hole service | Redeploy from Git; PVC restore is future work |
+| PKI | Restore CA material from encrypted offline backup |
 | Persistent application data | Not yet guaranteed |
 
 Recovery priority:
@@ -206,8 +243,9 @@ Recovery priority:
 5. restore K3s control plane
 6. restore K3s workers
 7. restore MetalLB and Pi-hole
-8. restore platform services
-9. restore application data
+8. restore cert-manager and the Server Issuing CA Secret
+9. restore platform services
+10. restore application data
 
 ## Design Decisions
 

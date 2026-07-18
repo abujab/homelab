@@ -50,6 +50,12 @@ ports:
     expose:
       default: true
     exposedPort: 80
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
   websecure:
     expose:
       default: true

@@ -18,7 +18,7 @@ This document covers:
 - Git as source of truth
 - wired management baseline
 - current limitations
-- future TLS
+- private PKI and TLS
 - future secrets management
 - future network segmentation
 
@@ -71,6 +71,19 @@ This means privileged changes are performed through sudo rather than by logging 
 
 Cluster node network access is managed through the wired Ethernet baseline. Wi-Fi is disabled during normal operation and should only be re-enabled deliberately for recovery.
 
+HomeLab now uses a private two-tier PKI for internal HTTPS:
+
+```text
+HomeLab Root CA
+├── HomeLab Server Issuing CA
+└── HomeLab Client Issuing CA
+```
+
+The encrypted Root CA key remains outside Git and Kubernetes. Only the Server
+Issuing CA is imported into Kubernetes for cert-manager server-certificate
+automation. The Client Issuing CA remains offline for future client
+authentication and mTLS work.
+
 ## Design Decisions
 
 ### SSH keys instead of passwords
@@ -108,6 +121,7 @@ The next baseline playbook run restores the managed Wi-Fi-disabled state.
 - prefer automated, reviewable changes over manual configuration
 - prefer wired Ethernet for cluster node access and platform traffic
 - avoid committing secrets to the repository
+- avoid committing private keys, generated Secret manifests or PKCS#12 bundles
 - document security assumptions and limitations explicitly
 
 ## Future Improvements
@@ -115,7 +129,6 @@ The next baseline playbook run restores the managed Wi-Fi-disabled state.
 Current limitations:
 
 - no documented hardening baseline is implemented yet
-- no internal TLS automation is implemented yet
 - no dedicated secrets management system is implemented yet
 - no network segmentation or VLAN model is implemented yet
 - K3s API access currently depends on local kubeconfig handling
@@ -123,8 +136,7 @@ Current limitations:
 Planned security improvements include:
 
 - implementation of a hardening playbook or role
-- TLS for internal services
-- certificate management
+- client-certificate authentication and mTLS for selected services
 - secrets management for Kubernetes and automation
 - network segmentation
 - role-based access control review
@@ -136,4 +148,5 @@ Planned security improvements include:
 - [Ansible](ansible.md)
 - [Kubernetes](kubernetes.md)
 - [Networking](networking.md)
+- [PKI](pki.md)
 - [Repository Structure](../overview/repository.md)

@@ -8,6 +8,10 @@ metadata:
     app.kubernetes.io/part-of: homelab-ingress-test
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - test.home.arpa
+      secretName: test-home-arpa-tls
   rules:
     - host: test.home.arpa
       http:
