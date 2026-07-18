@@ -1,0 +1,28 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: pihole-home-arpa
+  namespace: networking
+  labels:
+    app.kubernetes.io/name: pihole
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: homelab-certificates
+spec:
+  secretName: pihole-home-arpa-tls
+  commonName: pihole.home.arpa
+  dnsNames:
+    - pihole.home.arpa
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+  duration: 2160h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 3072
+    rotationPolicy: Always
+  issuerRef:
+    name: homelab-server-ca
+    kind: ClusterIssuer
+    group: cert-manager.io

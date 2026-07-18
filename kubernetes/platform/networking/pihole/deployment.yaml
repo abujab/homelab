@@ -31,7 +31,7 @@ spec:
             - name: FTLCONF_dns_upstreams
               value: 1.1.1.1;1.0.0.1;9.9.9.9
             - name: FTLCONF_misc_dnsmasq_lines
-              value: address=/pihole.home.arpa/192.168.68.200;address=/test.home.arpa/192.168.68.201
+              value: address=/pihole.home.arpa/192.168.68.201;address=/test.home.arpa/192.168.68.201
             - name: FTLCONF_webserver_api_password
               valueFrom:
                 secretKeyRef:

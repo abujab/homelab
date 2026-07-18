@@ -668,8 +668,11 @@ Resolution:
 Confirm the deployment includes:
 
 ```text
-address=/pihole.home.arpa/192.168.68.200
+address=/pihole.home.arpa/192.168.68.201
 ```
+
+The expected value is `192.168.68.201`. The earlier `.200` value is the
+rollback destination only; it must not remain in the desired deployment.
 
 Reapply the Pi-hole manifests:
 
@@ -742,6 +745,42 @@ Expected result:
 ```text
 192.168.68.201
 ```
+
+### Pi-hole hostname resolves but the dashboard is unavailable
+
+Problem:
+
+`pihole.home.arpa` resolves to `192.168.68.201`, but the dashboard returns a
+Traefik error or does not load.
+
+Cause:
+
+The Ingress may reference the wrong backend, the `pihole-web` endpoints may be
+empty, or `Certificate/pihole-home-arpa` may not be ready.
+
+Resolution:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig get ingress pihole -n networking
+kubectl --kubeconfig ansible/kubeconfig describe ingress pihole -n networking
+kubectl --kubeconfig ansible/kubeconfig get service,endpoints pihole-web -n networking
+kubectl --kubeconfig ansible/kubeconfig get certificate,certificaterequest -n networking
+kubectl --kubeconfig ansible/kubeconfig describe certificate pihole-home-arpa -n networking
+```
+
+The Ingress backend must be `pihole-web:http`. Do not point it at the DNS
+LoadBalancer Service.
+
+Verification:
+
+```bash
+curl --resolve pihole.home.arpa:443:192.168.68.201 \
+  --cacert "${HOMELAB_PKI_DIR}/root/certs/homelab-root-ca.crt" \
+  https://pihole.home.arpa/admin/
+```
+
+If certificate verification fails, verify Root CA trust and inspect the served
+chain before changing the Ingress or issuer.
 
 ### Traefik Service has no external IP
 

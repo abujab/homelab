@@ -259,11 +259,18 @@ kubectl --kubeconfig ansible/kubeconfig create secret generic pihole-admin \
   --namespace networking \
   --from-literal=password='<strong-local-password>' \
   --dry-run=client -o yaml | kubectl --kubeconfig ansible/kubeconfig apply -f -
-kubectl --kubeconfig ansible/kubeconfig apply -k kubernetes/platform/networking/pihole
+kubectl --kubeconfig ansible/kubeconfig apply \
+  -f kubernetes/platform/networking/pihole/namespace.yaml \
+  -f kubernetes/platform/networking/pihole/pvc.yaml \
+  -f kubernetes/platform/networking/pihole/deployment.yaml \
+  -f kubernetes/platform/networking/pihole/service.yaml \
+  -f kubernetes/platform/networking/pihole/web-service.yaml
 kubectl --kubeconfig ansible/kubeconfig rollout status deployment/pihole -n networking --timeout=300s
 ```
 
-If the Secret already exists, leave it in place rather than committing its value to Git.
+The Certificate and Ingress are applied after Traefik and cert-manager are
+installed. If the Secret already exists, leave it in place rather than
+committing its value to Git.
 
 Verify networking:
 
@@ -276,7 +283,7 @@ kubectl --kubeconfig ansible/kubeconfig get l2advertisements -A
 kubectl --kubeconfig ansible/kubeconfig get svc pihole -n networking
 dig @192.168.68.200 openai.com +short
 dig @192.168.68.200 pihole.home.arpa +short
-curl -I http://192.168.68.200/admin/
+scripts/validate-pihole-exposure.sh
 ```
 
 Expected result:
@@ -287,7 +294,10 @@ Expected result:
 - all nodes use `eth0` and gateway `192.168.68.1`
 - Wi-Fi is disabled on all cluster nodes
 - public DNS resolves through Pi-hole
-- `pihole.home.arpa` resolves to `192.168.68.200`
+- `pihole.home.arpa` resolves to Traefik at `192.168.68.201`
+- Pi-hole DNS remains available at `192.168.68.200` over TCP and UDP port 53
+- the Pi-hole Web UI is available at `https://pihole.home.arpa/admin/`
+- TCP port 80 is not exposed by the Pi-hole LoadBalancer
 
 ### 13. Install the ingress foundation
 
@@ -312,6 +322,35 @@ helm upgrade --install traefik traefik/traefik \
   --namespace ingress \
   --values kubernetes/platform/ingress/values.yaml \
   --kubeconfig ansible/kubeconfig
+```
+
+Install cert-manager and restore the existing Server Issuing CA integration:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply \
+  -f kubernetes/platform/certificates/namespace.yaml
+
+helm upgrade --install cert-manager \
+  oci://quay.io/jetstack/charts/cert-manager \
+  --version v1.21.0 \
+  --namespace cert-manager \
+  --values kubernetes/platform/certificates/values.yaml \
+  --kubeconfig ansible/kubeconfig
+
+scripts/pki/create-server-ca-secret.sh --kubeconfig ansible/kubeconfig
+
+kubectl --kubeconfig ansible/kubeconfig apply \
+  -f kubernetes/platform/certificates/issuers/homelab-server-ca.yaml
+```
+
+Apply the complete Pi-hole desired state now that the Certificate and Ingress
+APIs are available:
+
+```bash
+kubectl --kubeconfig ansible/kubeconfig apply \
+  -k kubernetes/platform/networking/pihole
+kubectl --kubeconfig ansible/kubeconfig wait --for=condition=Ready \
+  certificate/pihole-home-arpa -n networking --timeout=120s
 ```
 
 Apply the ingress test application:
@@ -344,6 +383,9 @@ Expected result:
 - two Traefik pods are running
 - Traefik has LoadBalancer IP `192.168.68.201`
 - `test.home.arpa` resolves to `192.168.68.201`
+- `pihole.home.arpa` resolves to `192.168.68.201`
+- Pi-hole DNS remains at `192.168.68.200`
+- `Certificate/pihole-home-arpa` reports Ready
 - `curl http://test.home.arpa` returns a `whoami` response
 
 If the management workstation is not yet using Pi-hole as its DNS resolver,

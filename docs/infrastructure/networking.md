@@ -59,8 +59,10 @@ Home LAN 192.168.68.0/22
             +-- pi4mB04 / eth0 / 192.168.68.104
         |
         +-- MetalLB service pool / 192.168.68.200-192.168.68.220
-            +-- pihole.home.arpa / 192.168.68.200
-            +-- test.home.arpa / 192.168.68.201 / Traefik ingress
+            +-- Pi-hole DNS resolver / 192.168.68.200 / TCP and UDP 53
+            +-- Traefik ingress / 192.168.68.201
+                +-- pihole.home.arpa / HTTPS
+                +-- test.home.arpa / HTTPS
 ```
 
 Current DHCP reservations:
@@ -140,9 +142,13 @@ Current configuration:
 | Setting | Value |
 |---------|-------|
 | Namespace | `networking` |
-| Service type | `LoadBalancer` |
-| Service IP | `192.168.68.200` |
-| DNS name | `pihole.home.arpa` |
+| DNS Service | `pihole` / `LoadBalancer` |
+| DNS resolver IP | `192.168.68.200` |
+| DNS ports | TCP and UDP `53` |
+| Web Service | `pihole-web` / `ClusterIP` |
+| Web hostname | `pihole.home.arpa` |
+| Web destination | Traefik / `192.168.68.201` |
+| Dashboard URL | `https://pihole.home.arpa/admin/` |
 | Upstream DNS | `1.1.1.1`, `1.0.0.1`, `9.9.9.9` |
 | Persistent volume | `pihole-config` |
 | Image | `pihole/pihole@sha256:f7d1be836e3bc608b56d82fc9904f5a831cdfbc0dc9c6d58f94e4c985c70038b` |
@@ -152,6 +158,11 @@ The implementation lives in:
 ```text
 kubernetes/platform/networking/pihole/
 ```
+
+The Pi-hole DNS resolver remains directly reachable because LAN clients require
+TCP and UDP DNS. Its browser interface is not exposed by the LoadBalancer.
+Traefik terminates TLS and forwards internal HTTP to the `pihole-web` ClusterIP
+Service.
 
 The Pi-hole administrative password is stored in a Kubernetes Secret named `pihole-admin`.
 
@@ -209,8 +220,11 @@ Current service names:
 
 | Name | IP Address | Purpose |
 |------|------------|---------|
-| pihole.home.arpa | 192.168.68.200 | Pi-hole DNS and web UI |
+| pihole.home.arpa | 192.168.68.201 | Pi-hole Web UI through Traefik |
 | test.home.arpa | 192.168.68.201 | Traefik ingress validation route |
+
+The Pi-hole DNS resolver address remains `192.168.68.200`. Resolver addresses
+and application-hostname destinations are separate responsibilities.
 
 Reserved future names:
 
@@ -297,8 +311,8 @@ ansible pis -m command -a "nmcli radio wifi"
 dig @192.168.68.200 openai.com +short
 dig @192.168.68.200 pihole.home.arpa +short
 dig @192.168.68.200 test.home.arpa +short
-curl -I http://192.168.68.200/admin/
-curl http://test.home.arpa
+curl https://pihole.home.arpa/admin/
+curl --connect-timeout 5 -I http://192.168.68.200/
 ```
 
 ## Related Documents
@@ -312,3 +326,4 @@ curl http://test.home.arpa
 - [ADR-0008 Networking Foundation](../decisions/ADR-0008-networking-foundation.md)
 - [ADR-0009 Wired Network for Cluster Nodes](../decisions/ADR-0009-wired-network-for-cluster-nodes.md)
 - [ADR-0010 Ingress Foundation](../decisions/ADR-0010-ingress-foundation.md)
+- [ADR-0012 Application Exposure Through the Shared Ingress Layer](../decisions/ADR-0012-application-exposure-through-shared-ingress.md)
