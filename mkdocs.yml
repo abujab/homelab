@@ -52,6 +52,19 @@ nav:
       - Architecture: overview/architecture.md
       - Repository: overview/repository.md
       - Roadmap: overview/roadmap.md
+  - Architecture Decisions:
+      - ADR-0001 Operating System: decisions/ADR-0001-operating-system.md
+      - ADR-0002 Configuration Management: decisions/ADR-0002-configuration-management.md
+      - ADR-0003 Kubernetes Distribution: decisions/ADR-0003-kubernetes-distribution.md
+      - ADR-0004 Storage: decisions/ADR-0004-storage.md
+      - ADR-0005 GitOps: decisions/ADR-0005-gitops.md
+      - ADR-0006 Repository Structure: decisions/ADR-0006-repository-structure.md
+      - ADR-0007 Target Architecture: decisions/ADR-0007-homelab-target-architecture.md
+      - ADR-0008 Networking Foundation: decisions/ADR-0008-networking-foundation.md
+      - ADR-0009 Wired Network: decisions/ADR-0009-wired-network-for-cluster-nodes.md
+      - ADR-0010 Ingress Foundation: decisions/ADR-0010-ingress-foundation.md
+      - ADR-0011 PKI and TLS: decisions/ADR-0011-pki-and-tls-foundation.md
+      - ADR-0012 Application Exposure: decisions/ADR-0012-application-exposure-through-shared-ingress.md
   - Infrastructure:
       - Raspberry Pi Cluster: infrastructure/raspberry-pi-cluster.md
       - Ansible: infrastructure/ansible.md

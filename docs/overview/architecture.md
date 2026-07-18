@@ -44,6 +44,7 @@ The cluster was built in phases:
 9. enforce wired Ethernet as the cluster node transport
 10. introduce Traefik ingress
 11. introduce private PKI and trusted internal TLS
+12. separate infrastructure protocols from browser-facing application ingress
 
 The current Kubernetes cluster is healthy.
 
@@ -110,7 +111,8 @@ HomeLab platform networking currently provides:
 - cert-manager certificate automation
 - HomeLab private PKI
 - `.home.arpa` service naming
-- `pihole.home.arpa` at `192.168.68.200`
+- Pi-hole DNS at `192.168.68.200` on TCP and UDP port 53
+- `pihole.home.arpa` at `192.168.68.201` over HTTPS
 - `test.home.arpa` at `192.168.68.201` over HTTPS
 - wired Ethernet node transport
 - Wi-Fi disabled on dedicated cluster nodes
@@ -120,6 +122,9 @@ Traefik and ServiceLB were disabled during K3s installation so that ingress and 
 HomeLab uses an offline Root CA with separate Server and Client Issuing CAs.
 cert-manager uses only the Server Issuing CA to automate server certificates.
 Traefik terminates TLS and redirects HTTP traffic to HTTPS.
+Browser-facing applications normally use ClusterIP Services behind Traefik.
+Pi-hole demonstrates the documented exception model: DNS remains directly
+exposed through MetalLB while its Web UI uses shared ingress.
 
 ### Target hybrid topology
 
@@ -186,6 +191,12 @@ The HomeLab Root CA is the private trust anchor for `home.arpa` services. The
 Root key remains offline and signs issuing CAs only. Server certificate
 automation is delegated to cert-manager through the Server Issuing CA.
 
+### Shared ingress for browser-facing applications
+
+Application hostnames resolve to Traefik, TLS terminates at Traefik and traffic
+is forwarded to internal ClusterIP Services. Dedicated LoadBalancer Services
+are reserved for non-HTTP protocols or approved end-to-end TLS exceptions.
+
 ---
 
 ## Best Practices
@@ -228,3 +239,4 @@ Longer-term improvements:
 - [Roadmap](roadmap.md)
 - [Ingress](../infrastructure/ingress.md)
 - [PKI](../infrastructure/pki.md)
+- [ADR-0012 Application Exposure Through the Shared Ingress Layer](../decisions/ADR-0012-application-exposure-through-shared-ingress.md)

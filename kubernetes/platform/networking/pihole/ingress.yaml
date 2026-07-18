@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pihole
+  namespace: networking
+  labels:
+    app.kubernetes.io/name: pihole
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: homelab-networking
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - pihole.home.arpa
+      secretName: pihole-home-arpa-tls
+  rules:
+    - host: pihole.home.arpa
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pihole-web
+                port:
+                  name: http

@@ -3,3 +3,6 @@ resources:
   - pvc.yaml
   - deployment.yaml
   - service.yaml
+  - web-service.yaml
+  - certificate.yaml
+  - ingress.yaml

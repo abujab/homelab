@@ -9,9 +9,9 @@
 
 ## Current Platform State
 
-HomeLab has completed its first seven engineering implementation sprints and the first three documentation sprints.
+HomeLab has completed its first eight engineering implementation sprints and the first three documentation sprints.
 
-The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, trusted Traefik HTTPS, automated cert-manager certificate lifecycle, Ansible automation and MkDocs Material documentation.
+The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, shared Traefik application ingress, trusted HTTPS, automated cert-manager certificate lifecycle, Ansible automation and MkDocs Material documentation.
 
 ---
 
@@ -128,6 +128,28 @@ Completed:
 - Root CA client distribution documented; installation remains operator-controlled and pending by platform
 - ADR-0011 created
 
+### Infrastructure Sprint 8 — Pi-hole Secure Ingress
+
+Status: Complete
+
+Completed:
+
+- Pi-hole DNS and Web exposure separated without recreating the existing DNS Service
+- Pi-hole DNS retained MetalLB IP `192.168.68.200` with TCP and UDP port 53 only
+- direct Pi-hole Web access through `192.168.68.200:80` removed
+- `pihole-web` ClusterIP Service created as the internal HTTP backend
+- `pihole.home.arpa` changed to resolve to Traefik at `192.168.68.201`
+- standard Traefik Ingress created in the `networking` namespace
+- 90-day `pihole.home.arpa` certificate issued through `homelab-server-ca`
+- trusted dashboard access verified at `https://pihole.home.arpa/admin/`
+- browser rendering, authentication and normal administration verified
+- HTTP-to-HTTPS redirect verified
+- UDP and TCP DNS availability verified throughout migration
+- Pi-hole persistent volume preserved
+- automated exposure validation added and verified
+- full Kubernetes reapply verified unchanged
+- ADR-0012 established the shared application-ingress standard
+
 ### Documentation Sprint 1 — Overview Foundation
 
 Status: Complete
@@ -195,7 +217,8 @@ Current platform service IPs:
 
 | Service | DNS Name | IP Address | Status |
 |---------|----------|------------|--------|
-| Pi-hole | pihole.home.arpa | 192.168.68.200 | Ready |
+| Pi-hole DNS | Resolver address | 192.168.68.200 | Ready |
+| Pi-hole Web | pihole.home.arpa | 192.168.68.201 | Ready |
 | Traefik ingress | test.home.arpa | 192.168.68.201 | Ready |
 | cert-manager | Kubernetes internal | ClusterIP | Ready |
 
@@ -262,6 +285,6 @@ Known documentation risk:
 
 ## Next Work Package
 
-Reference documentation sprint.
+Infrastructure Sprint 9 — Observability Foundation.
 
 Create `work-orders/CURRENT.md` when the next work order is prepared.

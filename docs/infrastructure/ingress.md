@@ -34,12 +34,12 @@ the HTTP `Host` header.
 
 ## Architecture / Implementation
 
-Current ingress traffic flow:
+Current application ingress traffic flow:
 
 ```text
 Client browser
 |
-+-- DNS query: test.home.arpa
++-- DNS query: application.home.arpa
 |   |
 |   +-- Pi-hole / 192.168.68.200
 |       |
@@ -53,11 +53,11 @@ Client browser
             |
             +-- Traefik pod
                 |
-                +-- Ingress rule for test.home.arpa
+                +-- Ingress rule for application.home.arpa
                     |
-                    +-- whoami Service
+                    +-- ClusterIP Service
                         |
-                        +-- whoami Pod
+                        +-- application Pod
 ```
 
 Current ingress endpoint:
@@ -84,6 +84,7 @@ Pi-hole remains the dedicated DNS service.
 Application DNS records point to the Traefik ingress IP:
 
 ```text
+pihole.home.arpa -> 192.168.68.201
 test.home.arpa -> 192.168.68.201
 ```
 
@@ -107,6 +108,13 @@ Pi-hole continues to use:
 
 ```text
 192.168.68.200
+```
+
+This address exposes only Pi-hole DNS on TCP and UDP port 53. The Pi-hole Web
+UI follows the standard ingress pattern:
+
+```text
+pihole.home.arpa -> Traefik -> pihole-web Service -> Pi-hole Pod
 ```
 
 Both IPs are in the MetalLB address pool:
@@ -159,6 +167,10 @@ implementation.
 TLS is terminated by Traefik using certificates issued by cert-manager from the
 HomeLab Server Issuing CA.
 
+HTTP between Traefik and ordinary application backends is the default. An
+application requiring end-to-end TLS, mTLS or TLS passthrough requires an
+explicit architectural exception.
+
 HTTP-to-HTTPS redirection is configured at the Traefik `web` entry point so
 current ingress routes use HTTPS by default.
 
@@ -173,6 +185,8 @@ No wildcard DNS records are created in this sprint.
 - avoid allocating a new LoadBalancer IP for each web application
 - pin Helm chart versions in repository-managed configuration
 - use cert-manager managed TLS Secrets for ingress routes
+- reserve dedicated LoadBalancer Services for non-HTTP protocols that require
+  direct LAN access
 
 ## Future Improvements
 
@@ -189,3 +203,4 @@ No wildcard DNS records are created in this sprint.
 - [PKI](pki.md)
 - [Ingress Operations](../operations/ingress.md)
 - [ADR-0010 Ingress Foundation](../decisions/ADR-0010-ingress-foundation.md)
+- [ADR-0012 Application Exposure Through the Shared Ingress Layer](../decisions/ADR-0012-application-exposure-through-shared-ingress.md)

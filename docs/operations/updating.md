@@ -155,6 +155,7 @@ Verify DNS:
 ```bash
 dig @192.168.68.200 openai.com +short
 dig @192.168.68.200 pihole.home.arpa +short
+scripts/validate-pihole-exposure.sh
 ```
 
 ### 10. Verify ingress
