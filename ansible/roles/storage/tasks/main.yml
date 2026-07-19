@@ -1,4 +1,13 @@
 ---
+- name: Assert expected storage identity is configured
+  ansible.builtin.assert:
+    that:
+      - storage_expected_model | trim | length > 0
+      - storage_expected_serial | trim | length > 0
+    fail_msg: >-
+      storage_expected_model and storage_expected_serial must be configured
+      explicitly for every storage node.
+
 - name: Install storage diagnostic packages
   ansible.builtin.apt:
     name: "{{ storage_diagnostic_packages }}"
