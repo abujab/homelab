@@ -28,14 +28,15 @@ The discovered disk was already partitioned and formatted with the required file
 | Stability | Pass — 3,600 seconds, 15.2 GiB read, 6,677 MiB written, `err=0` |
 | Kernel logs | Pass — no disconnect, reset, I/O or filesystem errors |
 | Post-test SMART | Pass — critical counters unchanged; temperature 41°C |
+| Supplemental power | Pass — both Y-cable connectors produced reproducible 60–62 MB/s sequential throughput without kernel or SMART errors |
 
 ## Design Decisions
 
-The mount is bound to the filesystem label and automation validates model and serial. Raw-device writes and destructive filesystem preparation are excluded from automation.
+The mount is bound to the filesystem label and automation validates model and serial. Raw-device writes and destructive filesystem preparation are excluded from automation. Both enclosure Y-cable connectors form part of the qualified hardware configuration because the supplemental-power connection produced materially better and reproducible performance without changing the negotiated USB data path.
 
 ## Best Practices
 
-Continue periodic SMART monitoring and review USB/kernel errors before placing important workloads on the device.
+Continue periodic SMART monitoring and review USB/kernel errors before placing important workloads on the device. Keep both Y-cable connectors attached.
 
 ## Future Improvements
 

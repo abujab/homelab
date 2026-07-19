@@ -82,6 +82,21 @@ The file-based baseline measured:
 
 The mount survived a node reboot and temporary-file write validation. Detailed command evidence is stored in `artifacts/WO-0009`.
 
+### Supplemental power validation
+
+The NexStar CX enclosure uses a Y-cable with separate data/power and supplemental-power connectors. After connecting both USB legs, the same 30-second file-based workloads were repeated with identical fio parameters.
+
+| Workload | Single connector | Both Y-cable connectors | Change |
+|----------|-----------------:|-------------------------:|-------:|
+| Sequential read | 43.6 MB/s | 61.2 MB/s | +40% |
+| Sequential write | 31.1 MB/s | 59.7 MB/s | +92% |
+| 4 KiB random read | 62 IOPS | 100 IOPS | +61% |
+| 4 KiB random write | 155 IOPS | 218 IOPS | +41% |
+
+Repeat sequential tests produced 61.7 MB/s read and 60.6 MB/s write. Two additional `hdparm` buffered-read tests produced 58.44 MB/s and 58.45 MB/s, confirming the improvement was reproducible.
+
+The data path did not change: the bridge remained at USB SuperSpeed 5 Gbit/s through the `usb-storage` driver without UASP. No USB reset, disconnect, undervoltage, filesystem or block-I/O error was logged, and SMART critical counters remained zero. The improvement is therefore recorded as a benefit of providing the enclosure with its intended supplemental power, not as an increase in negotiated USB bandwidth.
+
 ## Design Decisions
 
 ### Use K3s default local storage for the foundation
@@ -114,10 +129,12 @@ The prepared path is not yet a Longhorn deployment. Kubernetes storage configura
 - keep storage decisions tied to workload requirements
 - review SMART attributes and kernel logs before accepting a disk
 - run benchmarks against a disposable file on the mounted filesystem, not against the raw block device
+- keep both Y-cable connectors attached so the enclosure receives its intended supplemental power
 
 Known limitations:
 
 - the ASMedia ASM1051 bridge negotiated USB SuperSpeed at 5 Gbit/s but uses the `usb-storage` driver rather than UASP
+- the enclosure depends on both Y-cable connectors for the qualified power and performance baseline
 - the qualified disk is an older 5400 RPM SATA device and is suitable for foundation testing, not high-performance workloads
 - only one node currently has qualified data storage, so no replicated storage capability exists
 

@@ -14,3 +14,15 @@ One-hour stability test, direct mixed random I/O, 70% read, 64 KiB blocks, libai
 - write: 6,677 MiB, 29 IOPS, 1,945 kB/s
 - fio result: err=0
 - disk utilization: 99.64%
+
+Supplemental-power comparison, both Y-cable connectors attached, identical 30-second file-based workloads:
+
+- sequential write: 57.0 MiB/s (59.7 MB/s), 1,711 MiB, err=0
+- sequential read: 58.4 MiB/s (61.2 MB/s), 1,751 MiB, err=0
+- random write, 4 KiB: 218 IOPS, 876 KiB/s (897 kB/s), err=0
+- random read, 4 KiB: 100 IOPS, 404 KiB/s (414 kB/s), err=0
+- repeat sequential write: 57.8 MiB/s (60.6 MB/s), err=0
+- repeat sequential read: 58.8 MiB/s (61.7 MB/s), err=0
+- repeated hdparm buffered reads: 58.44 MB/s and 58.45 MB/s
+
+USB topology remained SuperSpeed 5 Gbit/s through `usb-storage`; no UASP activation occurred. Post-test kernel logs contained no USB reset, disconnect, undervoltage, ext4 or block-I/O errors. SMART remained PASSED with zero reallocated, pending, offline-uncorrectable and UDMA CRC sectors at 37°C.
