@@ -1,0 +1,16 @@
+fio 3.39, direct file-based I/O on /srv/longhorn/.wo-0009-benchmark, 30 seconds per workload
+
+sequential-write: 29.6 MiB/s (31.1 MB/s), 890 MiB, err=0
+sequential-read: 41.6 MiB/s (43.6 MB/s), 1249 MiB, err=0
+random-write, 4 KiB: 155 IOPS, 619 KiB/s (634 kB/s), err=0
+random-read, 4 KiB: 62 IOPS, 251 KiB/s (257 kB/s), err=0
+
+The synchronous engine capped benchmark queue depth at one despite iodepth=16 for random tests; results represent the actual executed jobs.
+
+One-hour stability test, direct mixed random I/O, 70% read, 64 KiB blocks, libaio, queue depth 16:
+
+- runtime: 3,600.032 seconds
+- read: 15.2 GiB, 69 IOPS, 4,532 kB/s
+- write: 6,677 MiB, 29 IOPS, 1,945 kB/s
+- fio result: err=0
+- disk utilization: 99.64%

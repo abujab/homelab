@@ -1,0 +1,75 @@
+---
+- name: Install storage diagnostic packages
+  ansible.builtin.apt:
+    name: "{{ storage_diagnostic_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Resolve storage filesystem by label
+  ansible.builtin.command:
+    cmd: "findfs LABEL={{ storage_filesystem_label }}"
+  register: storage_label_device
+  changed_when: false
+
+- name: Read storage filesystem type
+  ansible.builtin.command:
+    cmd: "blkid -s TYPE -o value {{ storage_label_device.stdout | trim }}"
+  register: storage_detected_filesystem
+  changed_when: false
+
+- name: Resolve parent storage disk
+  ansible.builtin.command:
+    cmd: "lsblk -ndo PKNAME {{ storage_label_device.stdout | trim }}"
+  register: storage_parent_disk
+  changed_when: false
+
+- name: Read storage disk identity
+  ansible.builtin.command:
+    cmd: "lsblk -dn -o MODEL,SERIAL /dev/{{ storage_parent_disk.stdout | trim }}"
+  register: storage_disk_identity
+  changed_when: false
+
+- name: Assert prepared storage matches inventory
+  ansible.builtin.assert:
+    that:
+      - storage_detected_filesystem.stdout | trim == storage_filesystem_type
+      - storage_expected_model in storage_disk_identity.stdout
+      - storage_expected_serial in storage_disk_identity.stdout
+    fail_msg: >-
+      Refusing to mount unexpected storage. Label device={{ storage_label_device.stdout | trim }},
+      filesystem={{ storage_detected_filesystem.stdout | trim }},
+      identity={{ storage_disk_identity.stdout | trim }}.
+    success_msg: >-
+      Prepared {{ storage_filesystem_type }} storage {{ storage_filesystem_label }}
+      matches the expected disk identity.
+
+- name: Create storage mount point
+  ansible.builtin.file:
+    path: "{{ storage_mount_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Persist and mount storage by filesystem label
+  ansible.posix.mount:
+    path: "{{ storage_mount_path }}"
+    src: "LABEL={{ storage_filesystem_label }}"
+    fstype: "{{ storage_filesystem_type }}"
+    opts: "{{ storage_mount_options }}"
+    state: mounted
+
+- name: Verify mounted storage source and filesystem
+  ansible.builtin.command:
+    cmd: "findmnt -n -o SOURCE,FSTYPE,TARGET {{ storage_mount_path }}"
+  register: storage_mount_verification
+  changed_when: false
+
+- name: Assert storage mount is active
+  ansible.builtin.assert:
+    that:
+      - storage_filesystem_type in storage_mount_verification.stdout
+      - storage_mount_path in storage_mount_verification.stdout
+    fail_msg: "Storage mount verification failed: {{ storage_mount_verification.stdout }}"
+    success_msg: "Storage is mounted and persistent: {{ storage_mount_verification.stdout }}"

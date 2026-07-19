@@ -1,0 +1,9 @@
+Post-reboot and post-stability-test filtered kernel log review:
+
+- USB disconnects: 0
+- USB resets: 0
+- block I/O errors: 0
+- ext4 filesystem errors: 0
+- buffer I/O errors: 0
+
+The ASMedia AS2105/ASM1051 bridge remained attached through `usb-storage` at USB SuperSpeed for the complete 3,600-second mixed-I/O test. The ext4 filesystem remained mounted read/write throughout.

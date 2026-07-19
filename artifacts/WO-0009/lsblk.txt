@@ -1,0 +1,3 @@
+NAME   PATH      TYPE         SIZE MODEL                   SERIAL               TRAN FSTYPE LABEL         UUID
+sda    /dev/sda  disk 160041885696 Hitachi HTS545016B9SA02 091028PBDB00QCJNRTDP usb
+`-sda1 /dev/sda1 part 160039960576                                      ext4   pi-cl-storage 3e0e4776-2047-4962-bdd3-8a2e0e764a96

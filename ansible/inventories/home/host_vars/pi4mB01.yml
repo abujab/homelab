@@ -1,3 +1,7 @@
 ---
 # Unique network address for this Raspberry Pi.
 ansible_host: 192.168.68.101
+
+# Dedicated USB storage qualified for the future Longhorn data path.
+storage_expected_model: HTS545016B9SA02
+storage_expected_serial: 091028PBDB00QCJNRTDP

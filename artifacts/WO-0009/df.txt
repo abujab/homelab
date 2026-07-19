@@ -1,0 +1,2 @@
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       146G  1.1G  138G   1% /srv/longhorn

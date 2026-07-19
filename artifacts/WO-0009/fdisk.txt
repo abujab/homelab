@@ -1,0 +1,8 @@
+Disk /dev/sda: 149.05 GiB, 160041885696 bytes, 312581808 sectors
+Disk model: HTS545016B9SA02
+Sector size (logical/physical): 512 bytes / 512 bytes
+Disklabel type: gpt
+Disk identifier: 04541519-DD4B-48C6-9FB8-BFCEC9DA6733
+
+Device     Start       End   Sectors  Size Type
+/dev/sda1   2048 312580095 312578048  149G Linux filesystem

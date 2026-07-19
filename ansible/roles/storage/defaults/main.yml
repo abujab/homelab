@@ -1,0 +1,12 @@
+---
+storage_filesystem_label: pi-cl-storage
+storage_filesystem_type: ext4
+storage_mount_path: /srv/longhorn
+storage_mount_options: defaults,nofail
+storage_expected_model: ""
+storage_expected_serial: ""
+
+storage_diagnostic_packages:
+  - fio
+  - hdparm
+  - smartmontools

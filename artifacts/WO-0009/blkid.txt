@@ -1,0 +1,2 @@
+/dev/sda: PTUUID="04541519-dd4b-48c6-9fb8-bfcec9da6733" PTTYPE="gpt"
+/dev/sda1: LABEL="pi-cl-storage" UUID="3e0e4776-2047-4962-bdd3-8a2e0e764a96" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="primary" PARTUUID="5f6ef0d6-57b4-4068-ba06-d0366155e26f"
