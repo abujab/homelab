@@ -1,0 +1,9 @@
+---
+# Configure and verify the storage hardware foundation independently of K3s.
+
+- name: Configure storage hardware foundation
+  hosts: storage_nodes
+  become: true
+
+  roles:
+    - storage

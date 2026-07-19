@@ -1,0 +1,5 @@
+Persistent fstab entry:
+LABEL=pi-cl-storage /srv/longhorn ext4 defaults,nofail 0 2
+
+Post-reboot findmnt:
+/dev/sda1 ext4 /srv/longhorn

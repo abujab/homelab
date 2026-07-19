@@ -1,0 +1,28 @@
+fio 3.39, direct file-based I/O on /srv/longhorn/.wo-0009-benchmark, 30 seconds per workload
+
+sequential-write: 29.6 MiB/s (31.1 MB/s), 890 MiB, err=0
+sequential-read: 41.6 MiB/s (43.6 MB/s), 1249 MiB, err=0
+random-write, 4 KiB: 155 IOPS, 619 KiB/s (634 kB/s), err=0
+random-read, 4 KiB: 62 IOPS, 251 KiB/s (257 kB/s), err=0
+
+The synchronous engine capped benchmark queue depth at one despite iodepth=16 for random tests; results represent the actual executed jobs.
+
+One-hour stability test, direct mixed random I/O, 70% read, 64 KiB blocks, libaio, queue depth 16:
+
+- runtime: 3,600.032 seconds
+- read: 15.2 GiB, 69 IOPS, 4,532 kB/s
+- write: 6,677 MiB, 29 IOPS, 1,945 kB/s
+- fio result: err=0
+- disk utilization: 99.64%
+
+Supplemental-power comparison, both Y-cable connectors attached, identical 30-second file-based workloads:
+
+- sequential write: 57.0 MiB/s (59.7 MB/s), 1,711 MiB, err=0
+- sequential read: 58.4 MiB/s (61.2 MB/s), 1,751 MiB, err=0
+- random write, 4 KiB: 218 IOPS, 876 KiB/s (897 kB/s), err=0
+- random read, 4 KiB: 100 IOPS, 404 KiB/s (414 kB/s), err=0
+- repeat sequential write: 57.8 MiB/s (60.6 MB/s), err=0
+- repeat sequential read: 58.8 MiB/s (61.7 MB/s), err=0
+- repeated hdparm buffered reads: 58.44 MB/s and 58.45 MB/s
+
+USB topology remained SuperSpeed 5 Gbit/s through `usb-storage`; no UASP activation occurred. Post-test kernel logs contained no USB reset, disconnect, undervoltage, ext4 or block-I/O errors. SMART remained PASSED with zero reallocated, pending, offline-uncorrectable and UDMA CRC sectors at 37°C.

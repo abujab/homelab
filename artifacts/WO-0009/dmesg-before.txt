@@ -1,0 +1,10 @@
+[Sun Jul 19 20:10:05 2026] xhci_hcd 0000:01:00.0: Host supports USB 3.0 SuperSpeed
+[Sun Jul 19 20:10:06 2026] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
+[Sun Jul 19 20:10:06 2026] usb 2-2: Product: AS2105
+[Sun Jul 19 20:10:06 2026] usb 2-2: Manufacturer: ASMedia
+[Sun Jul 19 20:10:06 2026] usb-storage 2-2:1.0: USB Mass Storage device detected
+[Sun Jul 19 20:10:07 2026] sd 0:0:0:0: [sda] 312581808 512-byte logical blocks: (160 GB/149 GiB)
+[Sun Jul 19 20:10:07 2026] sda: sda1
+[Sun Jul 19 20:10:11 2026] EXT4-fs (sda1): mounted filesystem 3e0e4776-2047-4962-bdd3-8a2e0e764a96 r/w with ordered data mode. Quota mode: none.
+
+No USB disconnect, reset, I/O error, or filesystem error was present in the filtered post-reboot baseline.

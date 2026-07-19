@@ -3,13 +3,13 @@
 **Project:** HomeLab  
 **Owner:** Abdul Jabbar  
 **Status:** Active Development  
-**Last Updated:** 2026-07-18
+**Last Updated:** 2026-07-19
 
 ---
 
 ## Current Platform State
 
-HomeLab has completed its first eight engineering implementation sprints and the first three documentation sprints.
+HomeLab has completed its first nine engineering implementation sprints and the first three documentation sprints.
 
 The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, shared Traefik application ingress, trusted HTTPS, automated cert-manager certificate lifecycle, Ansible automation and MkDocs Material documentation.
 
@@ -150,6 +150,23 @@ Completed:
 - full Kubernetes reapply verified unchanged
 - ADR-0012 established the shared application-ingress standard
 
+### Infrastructure Sprint 9 — Storage Hardware Foundation
+
+Status: Complete
+
+Completed:
+
+- Hitachi HTS545016B9SA02 disk on pi4mB01 identified by model and serial
+- ASMedia ASM1051 USB bridge verified at USB 3 SuperSpeed
+- SMART health verified with zero critical sector and CRC error counts
+- ext4 filesystem label `pi-cl-storage` verified without destructive reformatting
+- dedicated `/srv/longhorn` path persisted by filesystem label
+- idempotent Ansible storage role added with exact identity preflight checks
+- sequential and random file-based performance baselines recorded
+- reboot persistence and temporary-file validation completed
+- one-hour mixed-I/O stability test completed without fio or kernel storage errors
+- storage qualification evidence and documentation added
+
 ### Documentation Sprint 1 — Overview Foundation
 
 Status: Complete
@@ -272,6 +289,12 @@ Next documentation area:
 
 No blocking technical risks identified.
 
+Known storage limitations:
+
+- pi4mB01 is the only node with qualified dedicated storage; replicated storage is not yet possible.
+- the current ASMedia bridge operates through `usb-storage` rather than UASP.
+- the qualified 5400 RPM disk is appropriate for foundation testing but not high-performance workloads.
+
 Known PKI risk:
 
 - Root CA trust installation is still operator-controlled and pending on each client platform; clients without the Root CA will report the private certificate chain as untrusted.
@@ -285,6 +308,6 @@ Known documentation risk:
 
 ## Next Work Package
 
-Infrastructure Sprint 9 — Observability Foundation.
+Infrastructure Sprint 10 — Longhorn evaluation, subject to additional qualified node storage and an approved work order.
 
 Create `work-orders/CURRENT.md` when the next work order is prepared.

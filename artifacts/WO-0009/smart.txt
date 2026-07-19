@@ -1,0 +1,18 @@
+Device Model: Hitachi HTS545016B9SA02
+Serial Number: 091028PBDB00QCJNRTDP
+User Capacity: 160,041,885,696 bytes [160 GB]
+Rotation Rate: 5400 rpm
+SMART overall-health self-assessment test result: PASSED
+
+ID# ATTRIBUTE_NAME              RAW_VALUE
+  5 Reallocated_Sector_Ct       0
+  9 Power_On_Hours              4899
+194 Temperature_Celsius         29 (Min/Max 13/47)
+197 Current_Pending_Sector      0
+198 Offline_Uncorrectable       0
+199 UDMA_CRC_Error_Count        0
+
+SMART Extended Comprehensive Error Log: No Errors Logged
+Previous self-test routine completed without error; no self-tests have been logged.
+
+Post-stability-test health remained PASSED. Reallocated, pending, offline-uncorrectable and UDMA CRC counts remained zero. Temperature was 41°C, below the recorded lifetime maximum of 47°C.
