@@ -1,0 +1,19 @@
+WO-1004 strict MkDocs build
+Date: 2026-07-21
+Working directory: /home/abdul/Development/playGround/homelab
+
+$ source .venv/bin/activate
+$ mkdocs build --strict
+
+Material for MkDocs emitted its upstream advisory banner concerning proposed
+MkDocs 2.0 compatibility and licensing changes.
+
+INFO    -  Cleaning site directory
+INFO    -  Building documentation to directory: /home/abdul/Development/playGround/homelab/site
+INFO    -  Documentation built successfully
+
+Exit code: 0
+Result: PASS
+
+The advisory banner is emitted by the pinned MkDocs Material version and did
+not produce a MkDocs warning or strict-build failure.
