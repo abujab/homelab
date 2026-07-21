@@ -12,7 +12,8 @@ site/
 *.sublime-project
 *.sublime-workspace
 
-# Local Kubernetes secrets
+# Local Kubernetes credentials and secrets
+ansible/kubeconfig
 kubernetes/platform/networking/pihole/secret.yaml
 
 # Local PKI material and generated Kubernetes secrets
