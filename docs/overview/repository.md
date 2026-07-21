@@ -73,7 +73,6 @@ homelab/
 ```text
 ansible/
 |-- ansible.cfg
-|-- kubeconfig
 |-- inventories/
 |   `-- home/
 |       |-- group_vars/all.yml
@@ -93,8 +92,10 @@ ansible/
 ```
 
 Inventory describes where automation runs. Playbooks orchestrate work. Roles
-implement focused, reusable responsibilities. The local kubeconfig is used by
-documented operations and must be handled as an access-sensitive runtime file.
+implement focused, reusable responsibilities. The K3s role generates
+`ansible/kubeconfig` locally for documented operations. This ignored runtime
+file contains cluster-administrator credentials, is restricted to mode `0600`
+and is not part of the tracked repository structure.
 
 ### Kubernetes
 

@@ -24,7 +24,7 @@ Kubernetes desired state, dependency pins, ADRs and completed work evidence.
 | Storage | Only `pi4mB01` qualified; WD disk not connected; Longhorn absent; no replication | Storage role, WO-0009 and evidence | Pass |
 | ADR status | ADR-0001 through ADR-0012 registered without rewriting history | ADR source files | Pass with documented limitations |
 | Terminology | Product capitalization and Kubernetes resource terms normalized | Full Markdown scan | Pass |
-| Sensitive data | No password, token, private key or Secret value added to documentation or evidence | Changed-content scan | Pass |
+| Sensitive data | Initial changed-content review missed a historically tracked administrator kubeconfig; the credential was revoked, the file and its history were removed, and the full rewritten repository was rescanned | Gitleaks `8.30.1`, Git history and security PR #15 | Pass after remediation |
 
 ## Documented Limitations
 

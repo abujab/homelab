@@ -45,6 +45,7 @@ current-versus-planned classifications were reviewed separately.
 | `docs/operations/troubleshooting.md` | Did not cover the qualified storage mount | Storage role and WO-0009 | Add identity-safe mount troubleshooting | Resolved |
 | Existing overview, infrastructure and operations pages | Repeated addresses and inventory without declaring an authoritative location | Documentation source-of-truth model | Create Reference pages and add authority notes and cross-links | Resolved |
 | `mkdocs.yml` | No Reference navigation; ADR template and two Development pages were omitted | Pre-change strict build output and tracked docs tree | Add Reference, ADR template and Development navigation | Resolved |
+| Repository history and `ansible/kubeconfig` | Pull-request review found a tracked K3s administrator kubeconfig containing a client private key | PR #14 review and repository-wide Gitleaks scan | Revoke the credential, remove and ignore the file, purge it from history, rescan all refs and correct the documentation | Resolved through security PR #15 and history rewrite; GitHub Support cleanup pending |
 | `docs/decisions/ADR-0003-kubernetes-distribution.md` | ADR remains Proposed although K3s is implemented | K3s Ansible role and `PROJECT_STATE.md` | Preserve ADR; record status versus implementation in register | Unresolved, documented |
 | `docs/decisions/ADR-0007-homelab-target-architecture.md` | Tracked ADR file is zero length | Repository file state | Do not reconstruct; mark Pending verification | Unresolved, documented |
 | `docs/decisions/ADR-0010-ingress-foundation.md` | Historical consequences say TLS remains future | ADR-0011 and WO-0007 | Preserve historical text and explain subsequent implementation in register | Documented, no change |
@@ -71,6 +72,25 @@ than hidden.
 
 ## Security Review
 
-No private key, password, token, Kubernetes Secret value or certificate private
-material was copied into documentation or WO-1004 evidence. Sensitive runtime
-files are outside the documentation source-of-truth model.
+The original changed-content scan did not inspect existing repository history
+and therefore produced an invalid PASS result. PR #14 review identified the
+historically tracked `ansible/kubeconfig` as a live cluster-administrator
+credential. Its private material is not reproduced in this evidence.
+
+Remediation completed outside WO-1004's documentation-only change set:
+
+- Gitleaks `8.30.1` found one repository-history finding, the private key in
+  `ansible/kubeconfig` introduced by commit `b8c1778`.
+- the complete K3s cluster CA hierarchy was replaced, all workers and pods were
+  restarted, and the old kubeconfig returned `Unauthorized` even with server
+  TLS verification disabled.
+- security PR #15 removes the generated file from tracked content, adds it to
+  `.gitignore`, enforces mode `0600` and corrects operational documentation.
+- `git-filter-repo` `2.47.0` removed the path from every branch and tag; the
+  rewritten repository contains no reachable `ansible/kubeconfig` object.
+- a Gitleaks full-history scan of the rewritten repository found zero secrets.
+
+GitHub pull-request refs are read-only and cannot be replaced by a mirror push.
+GitHub Support must dereference the 15 affected pull requests and clear cached
+views to complete server-side expungement. The exposed credential is already
+invalid and cannot authenticate to the cluster.

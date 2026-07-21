@@ -10,7 +10,9 @@ Record the final acceptance result for Documentation Sprint 4.
 
 Validation covers deliverables, current-versus-planned accuracy, navigation,
 internal links, strict MkDocs output, whitespace, changed paths and sensitive
-content. It does not change or live-test running infrastructure.
+content. The original WO-1004 validation did not change or live-test running
+infrastructure; the security remediation triggered by review was executed and
+validated separately in PR #15.
 
 ## Acceptance Checklist
 
@@ -38,7 +40,8 @@ content. It does not change or live-test running infrastructure.
 - [x] `mkdocs build --strict` passed
 - [x] `git diff --check` passed
 - [x] No executable infrastructure file modified
-- [x] No sensitive value exposed
+- [x] Repository-wide secret scan completed
+- [x] Exposed administrator credential revoked and removed
 
 ## Automated Results
 
@@ -50,8 +53,34 @@ content. It does not change or live-test running infrastructure.
 | Duplicate MkDocs navigation targets | PASS, zero |
 | `git diff --check` | PASS |
 | Changed-file allowlist | PASS |
-| Sensitive changed-content scan | PASS |
+| Original sensitive changed-content scan | FAIL as a repository security control; it did not inspect existing history |
+| Gitleaks `8.30.1` before remediation | FAIL as expected; one `private-key` finding in historical `ansible/kubeconfig` |
+| Gitleaks `8.30.1` after history rewrite and PR #14 rebase | PASS, 46 commits scanned and zero findings |
+| Reachable-object check after history rewrite | PASS, no `ansible/kubeconfig` path |
+| Remote public branch and tag comparison | PASS, every ref matches the validated sanitized mirror |
+| `main` branch-protection restoration | PASS, enforced administrators, one approval, stale-review dismissal, code-owner review and force-push prohibition restored |
+| Exposed kubeconfig authentication after CA replacement | PASS, rejected as `Unauthorized` with server TLS verification disabled |
+| Replacement cluster health | PASS, four nodes and 15 replacement pods Ready |
+| Pi-hole DNS, ingress, TLS and exposure validation | PASS |
 | Infrastructure-file change scan | PASS, none |
+
+## Review Correction
+
+The original `No sensitive value exposed` assertion and final PASS were
+invalidated when PR #14 review found a live administrator kubeconfig in existing
+Git history. The finding was treated as a compromised credential rather than a
+documentation-only defect.
+
+Security PR #15 and the associated operational response replaced the complete
+K3s cluster CA hierarchy, invalidated the exposed client certificate, removed
+and ignored the generated kubeconfig, restricted regenerated copies to mode
+`0600`, refreshed every node and pod, and purged the path from branch and tag
+history. Repository-wide Gitleaks validation then passed with zero findings.
+
+Fifteen GitHub pull-request refs were affected by the rewrite. They are
+read-only, so GitHub Support dereferencing and cached-view cleanup remain a
+server-side administrative follow-up. This does not preserve access because the
+credential itself has been revoked.
 
 ## Preview Review
 
@@ -83,6 +112,9 @@ work-orders/WO-1004-documentation-architecture-reference-refresh.md
 These paths are within the work-order allowlist. No file under `ansible/`,
 `kubernetes/`, `requirements/` or `scripts/` changed.
 
+The kubeconfig removal, ignore rule and permission hardening are intentionally
+isolated in security PR #15 and are not part of the WO-1004 changed-path set.
+
 ## Unresolved Findings
 
 - ADR-0003 status remains Proposed although K3s is implemented.
@@ -94,4 +126,4 @@ These paths are within the work-order allowlist. No file under `ansible/`,
 
 ## Final Result
 
-PASS
+PASS after review remediation

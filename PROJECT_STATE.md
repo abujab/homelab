@@ -227,6 +227,9 @@ Completed:
 - all tracked documentation pages made reachable through MkDocs navigation
 - internal links, terminology, current-versus-planned state and changed-path allowlist reviewed
 - strict MkDocs build and whitespace validation completed successfully
+- pull-request review identified a historically tracked administrator
+  kubeconfig; the credential was revoked and repository remediation was handled
+  separately in security PR #15
 
 ---
 
@@ -323,6 +326,13 @@ Known PKI risk:
 
 - Root CA trust installation is still operator-controlled and pending on each client platform; clients without the Root CA will report the private certificate chain as untrusted.
 - CA material requires two verified encrypted offline backups in separate locations; Kubernetes and the management workstation are not sufficient backup targets.
+
+Known repository security follow-up:
+
+- the exposed K3s administrator credential has been invalidated, the generated
+  kubeconfig is excluded from Git, and branch and tag histories have been
+  rewritten; GitHub Support must still dereference affected pull-request refs
+  and clear cached views before server-side expungement is complete.
 
 Known documentation limitations:
 

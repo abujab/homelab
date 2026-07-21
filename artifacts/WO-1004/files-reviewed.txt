@@ -166,5 +166,8 @@ reviews/AR-0004-WO-0007-pki-tls-foundation.md
 reviews/AR-0005-WO-0008-pihole-web-exposure-and-application-ingress-standard.md
 reviews/AR-0006-WO-0009-storage-hardware-foundation.md
 
-Generated MkDocs site output, the local virtual environment, kubeconfig
-credentials and runtime Secret values were excluded as documentation sources.
+Generated MkDocs site output, the local virtual environment and runtime Secret
+values were excluded as documentation sources. The historic
+`ansible/kubeconfig` was reviewed only to establish credential exposure; its
+contents were not copied into documentation or evidence. All reachable Git
+history was included in the final Gitleaks scan.
