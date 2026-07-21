@@ -65,6 +65,7 @@ nav:
       - ADR-0010 Ingress Foundation: decisions/ADR-0010-ingress-foundation.md
       - ADR-0011 PKI and TLS: decisions/ADR-0011-pki-and-tls-foundation.md
       - ADR-0012 Application Exposure: decisions/ADR-0012-application-exposure-through-shared-ingress.md
+      - ADR Template: decisions/ADR-template.md
   - Infrastructure:
       - Raspberry Pi Cluster: infrastructure/raspberry-pi-cluster.md
       - Ansible: infrastructure/ansible.md
@@ -82,3 +83,14 @@ nav:
       - Rebuilding: operations/rebuilding.md
       - Troubleshooting: operations/troubleshooting.md
       - Backup: operations/backup.md
+  - Reference:
+      - Overview: reference/index.md
+      - Infrastructure Inventory: reference/infrastructure-inventory.md
+      - Naming and Addressing: reference/naming-and-addressing.md
+      - Software Inventory: reference/software-inventory.md
+      - Service Catalog: reference/service-catalog.md
+      - Decision Register: reference/decision-register.md
+      - Glossary: reference/glossary.md
+  - Development:
+      - Workflow: development/workflow.md
+      - Architecture Review: development/architecture-review.md
