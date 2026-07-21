@@ -1,183 +1,142 @@
-
 # Vision
 
 ---
 
 ## Purpose
 
-This document defines the long-term vision for HomeLab.
-
-It explains why the platform exists, what kind of engineering discipline it should follow, and what principles should guide future decisions.
-
----
+This document defines the long-term HomeLab vision and the engineering
+principles that govern its evolution.
 
 ## Scope
 
-This document covers:
-
-- project motivation
-- long-term goals
-- engineering principles
-- intended learning outcomes
-- operating philosophy
-
-This document does not describe implementation commands, exact IP addresses, Kubernetes manifests or Ansible task syntax. Those details belong in infrastructure, operations and reference documentation.
-
----
+It covers project intent, desired platform characteristics and target outcomes.
+It does not define exact addresses, versions, operational commands or approved
+implementation scope.
 
 ## Background
 
-HomeLab started as a practical experiment: build a Raspberry Pi cluster, run Kubernetes locally and use it as a foundation for local AI and self-hosted services.
+HomeLab began as a four-node Raspberry Pi Kubernetes project and has become a
+small private-cloud engineering platform.
 
-During implementation the project expanded. It now includes:
+The current foundation already includes:
 
-- a management workstation running Arch Linux
-- four Raspberry Pi 4 nodes
-- Ansible automation
-- K3s Kubernetes
-- MkDocs documentation
-- a future plan for x86 Linux laptops
-- a future plan for Turing Pi and RK1 modules
-- IBM ELM running in Ubuntu WSL on Windows
-- plans for local DNS and service discovery
+- an Arch Linux management workstation
+- four Raspberry Pi 4 Model B nodes
+- Ansible-managed Debian 13 node configuration
+- a wired K3s Kubernetes cluster
+- MetalLB and Pi-hole internal networking
+- Traefik shared ingress
+- a private PKI and cert-manager certificate automation
+- one independently qualified dedicated storage disk
+- MkDocs Material documentation and work-order review practices
 
-The project is therefore no longer just a Raspberry Pi cluster. It is becoming a small private datacenter.
-
----
+Future compute, storage and application tiers remain separate from this current
+state.
 
 ## Architecture / Implementation
 
-The vision is to build a hybrid private cloud using inexpensive hardware while applying professional infrastructure engineering practices.
-
-The platform should eventually support:
-
-- Kubernetes workloads
-- internal DNS
-- ingress
-- monitoring
-- logging
-- persistent storage
-- GitOps
-- CI/CD experiments
-- local AI workloads
-- home automation
-- developer tools
-- IBM ELM integration
-
-The platform should remain understandable and rebuildable. Every important decision should have a written rationale.
-
-The target model is:
+The vision is a reproducible hybrid private cloud built from accessible hardware
+while applying durable infrastructure engineering practices.
 
 ```text
-Management workstation
-        │
-        ▼
-Infrastructure as Code
-        │
-        ▼
-Hybrid compute platform
-        │
-        ├── ARM64 Raspberry Pi nodes
-        ├── ARM64 Turing/RK1 nodes
-        └── AMD64/x86 Linux laptops
-        │
-        ▼
-Kubernetes and supporting services
+Management and source-of-truth plane
+  |
+  +-- Git
+  +-- Ansible
+  +-- Kubernetes manifests and Helm values
+  +-- ADRs, work orders, evidence and documentation
+  |
+Hybrid platform
+  |
+  +-- Current ARM64 Raspberry Pi infrastructure tier
+  |
+  +-- Future ARM64 expansion tier
+  |
+  +-- Future AMD64/x86 compute tier
+  |
+Platform capabilities
+  |
+  +-- Current: Kubernetes, DNS, load balancing, ingress and private HTTPS
+  +-- Partial: qualified host storage foundation
+  +-- Planned: observability, replicated storage, GitOps and secrets management
+  +-- Planned: developer services and AI workloads
 ```
 
-The platform should resemble a miniature production environment rather than a collection of individual Raspberry Pis.
+The target platform should support:
 
-```
-                         Internet
-                             │
-                        ISP Router
-                             │
-                ┌────────────┴─────────────┐
-                │                          │
-         Management Network          WiFi Clients
-                │
-        ┌───────┴─────────────────────────────────────────────┐
-        │                                                     │
-   Raspberry Pi Cluster                                 x86 Cluster
-  (Always-on services)                              (Heavy workloads)
-        │                                                     │
- pi4mB01  Control Plane                              Dell 5591
- pi4mB02  Worker                                     ThinkPad
- pi4mB03  Worker                                     HP Laptop
- pi4mB04  Worker                                     ...
-        │                                                     │
-        └────────────── Kubernetes (single cluster) ──────────┘
-                              │
-                    MetalLB + Ingress + DNS
-                              │
-        grafana.home.arpa
-        git.home.arpa
-        elm.home.arpa
-        ollama.home.arpa
-        registry.home.arpa
-```
-
----
+- stable always-on infrastructure services
+- declarative application delivery
+- observable and recoverable stateful workloads
+- workload placement across ARM64 and AMD64 nodes
+- internal service identities under `home.arpa`
+- local developer and AI experimentation
+- documented integration paths for services such as IBM ELM
 
 ## Design Decisions
 
 ### Infrastructure as Code
 
-Manual configuration should be minimized. The desired state of the infrastructure should be expressed in code, primarily through Ansible, Kubernetes manifests and Helm charts.
+Desired state is expressed through Ansible, Kubernetes manifests, Helm values
+and Git before manual configuration is considered.
 
 ### Git as the source of truth
 
-The repository should describe the platform. If hardware fails, the platform should be recoverable from Git plus documented bootstrap steps.
+The repository, documented bootstrap procedure and required installation media
+must be sufficient to rebuild the platform. Runtime-only secrets and private key
+material require separate protected recovery procedures.
 
-### Documentation first
+### Documentation as implementation
 
-Documentation is not an afterthought. It is part of the platform. Every sprint should update documentation when the infrastructure changes.
+Architecture, operations, reference data, validation evidence and current
+project state are part of every completed sprint.
 
 ### Hybrid architecture
 
-The platform should support both ARM64 and AMD64 nodes. Raspberry Pis are excellent low-power infrastructure nodes. x86 laptops and future mini PCs are better suited for heavier compute and AI workloads.
+Raspberry Pis provide low-power infrastructure. Future x86 systems may provide
+heavier build, developer and AI compute after admission and scheduling are
+designed.
 
-### Service names over IP addresses
+### Service names over machine names
 
-Applications should be reached by DNS names, not IP addresses. The planned internal domain is `.home.arpa`.
+Machine names identify physical hardware. Applications use functional DNS names
+under the current `home.arpa` namespace.
 
----
+### Incremental maturity
+
+Each platform layer must be verified before dependent services are introduced.
+For example, additional disks must be qualified before distributed storage can
+be evaluated.
 
 ## Best Practices
 
-Future work should follow these principles:
-
+- preserve current-versus-target distinctions
 - prefer repeatable automation over manual commands
-- prefer clear architecture over quick shortcuts
-- avoid duplicating configuration values in many places
-- record important trade-offs as ADRs
-- use Kubernetes labels and node roles to express placement intent
+- record significant trade-offs in ADRs
+- use work orders with explicit acceptance criteria
+- maintain one authoritative source for stable lookup data
+- verify rebuild, backup and restore behavior
 - keep machine identity separate from service identity
-- validate each change with an acceptance test
-
----
 
 ## Future Improvements
 
-The vision will expand as the platform grows.
+The long-term direction may include:
 
-Potential future areas:
+- additional qualified node storage and distributed-storage evaluation
+- an external backup target
+- Prometheus, Grafana, Loki and Alertmanager
+- a reviewed GitOps platform
+- dedicated secrets management
+- x86 compute and additional ARM hardware
+- local AI model serving and developer applications
+- high-availability control-plane evaluation
 
-- high availability control plane
-- GitOps with FluxCD
-- MetalLB and ingress
-- Pi-hole or CoreDNS for internal DNS
-- TLS certificate management
-- Longhorn or another persistent storage solution
-- Prometheus, Grafana and Loki
-- x86 compute nodes
-- AI services such as Ollama and Open WebUI
-- IBM ELM service publication through local DNS
-
----
+These are target capabilities, not claims about the current platform.
 
 ## Related Documents
 
 - [Architecture](architecture.md)
-- [Repository Structure](repository.md)
 - [Roadmap](roadmap.md)
+- [Repository Structure](repository.md)
+- [Reference](../reference/index.md)
+- [Infrastructure Inventory](../reference/infrastructure-inventory.md)
+- [Decision Register](../reference/decision-register.md)

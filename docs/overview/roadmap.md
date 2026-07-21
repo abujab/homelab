@@ -1,229 +1,204 @@
-
 # Roadmap
 
 ---
 
 ## Purpose
 
-This document describes the planned evolution of HomeLab.
-
-It gives structure to future work and prevents the platform from growing randomly.
-
----
+This document describes the sequenced evolution of HomeLab and the dependencies
+that prevent planned capabilities from being mistaken for approved work.
 
 ## Scope
 
-This roadmap covers major platform phases.
-
-It does not replace `work-orders/CURRENT.md`. The roadmap describes long-term direction. `work-orders/CURRENT.md` describes the current sprint.
-
----
+The roadmap records platform phases and their states. It does not approve work,
+allocate work-order numbers or replace `work-orders/CURRENT.md`.
 
 ## Background
 
-The platform already completed the first major build phases:
-
-1. Raspberry Pi provisioning
-2. Ansible automation
-3. K3s Kubernetes installation
-
-The next phase focuses on networking because most future services depend on stable service exposure and DNS.
-
----
+HomeLab has completed the Raspberry Pi, Ansible, Kubernetes, networking,
+ingress, PKI and documentation foundations. Storage hardware qualification has
+started, but distributed storage remains blocked by insufficient qualified
+hardware.
 
 ## Architecture / Implementation
 
-### Phase 1 — Raspberry Pi Cluster
+Status meanings:
+
+| Status | Meaning |
+|--------|---------|
+| Complete | Implemented, verified and documented |
+| In progress | An approved work order is being executed |
+| Ready | Dependencies are met, but work is not automatically approved |
+| Blocked | A required dependency is not met |
+| Planned | Intended future direction without current implementation |
+| Exploratory | An option under consideration, not an approved direction |
+
+### Phase 1 - Raspberry Pi Foundation
 
 Status: Complete
 
-Completed:
+- four Raspberry Pi 4 Model B nodes
+- Raspberry Pi OS Lite 64-bit / Debian 13 baseline
+- hostnames, DHCP reservations and SSH key access
+- Arch Linux management workstation workflow
 
-- Raspberry Pi OS / Debian 13 installation
-- hostnames
-- static DHCP reservations
-- SSH key access
-- four-node cluster foundation
-
-### Phase 2 — Ansible Foundation
+### Phase 2 - Ansible Foundation
 
 Status: Complete
 
-Completed:
+- inventory, group variables and host variables
+- `common`, `network`, `k3s` and `storage` roles
+- baseline, update, K3s and storage playbooks
+- idempotent state and verification tasks
 
-- Ansible inventory
-- group variables
-- host variables
-- project-level `ansible.cfg`
-- common role
-- update playbook
-- baseline playbook
-- verification tasks
-
-### Phase 3 — Kubernetes Foundation
+### Phase 3 - Kubernetes Foundation
 
 Status: Complete
 
-Completed:
+- K3s control plane on `pi4mB01`
+- three K3s workers
+- CoreDNS, Metrics Server, Local Path Provisioner and containerd
+- kubeconfig retrieval, worker labels and cluster verification
 
-- K3s server on pi4mB01
-- K3s agents on pi4mB02, pi4mB03, pi4mB04
-- kubeconfig retrieval
-- worker labels
-- cluster verification
-- CoreDNS running
-- Metrics Server running
-- Local Path Provisioner running
-
-### Phase 4 — Documentation Foundation
-
-Status: In progress
-
-Objectives:
-
-- MkDocs Material setup
-- documentation structure
-- overview documentation
-- architecture documentation
-- repository documentation
-- roadmap documentation
-
-### Phase 5 — Networking Foundation
+### Phase 4 - Networking, Ingress and TLS Foundation
 
 Status: Complete
 
-Completed:
-
-- MetalLB
+- TP-Link TL-SG108E wired transport
+- Wi-Fi disabled through the Ansible baseline
+- MetalLB Layer 2 address pool
 - Pi-hole internal DNS
-- Traefik ingress controller
-- `.home.arpa` naming
-- service discovery
-- IBM ELM DNS entry
-- first internal service URLs
-- TP-Link TL-SG108E wired switch baseline
-- wired Ethernet as cluster node transport
-- Wi-Fi disabled through Ansible
+- Traefik shared ingress
+- private Root, Server Issuing and Client Issuing CAs
+- cert-manager server-certificate automation
+- HTTP-to-HTTPS redirection
+- secure Pi-hole Web exposure through shared ingress
 
-Completed:
+`elm.home.arpa` is reserved only. IBM ELM is not deployed or published.
 
-- private PKI foundation
-- cert-manager certificate automation
-- trusted HTTPS for ingress validation
-- HTTP-to-HTTPS redirect
+### Phase 5 - Documentation Foundation
 
-Remaining future work:
+Status: Complete
 
-- additional service records
+| Documentation Sprint | Result |
+|----------------------|--------|
+| WO-1001 Overview | Complete |
+| WO-1002 Infrastructure | Complete |
+| WO-1003 Operations | Complete |
+| WO-1004 Architecture and Reference Refresh | Complete |
 
-### Phase 6 — Observability
+The current documentation includes overview, ADR, infrastructure, operations,
+reference and development workflow navigation.
+
+### Phase 6A - Storage Hardware Foundation
+
+Status: Complete for `pi4mB01`; incomplete cluster-wide
+
+- Hitachi 160 GB disk independently qualified on `pi4mB01`
+- ext4 label and persistent `/srv/longhorn` host mount
+- exact model and serial validation through Ansible
+- SMART, performance, reboot and sustained-I/O evidence
+
+The host path is preparatory. It does not provide Kubernetes replication.
+
+### Phase 6B - Storage Expansion and Distributed Storage
+
+Status: Blocked
+
+```text
+Longhorn evaluation
+    depends on
+at least one additional independently qualified storage node
+    and
+approved storage architecture and work order
+```
+
+The known WD1600BEVT disk for `pi4mB02` is not connected or qualified.
+Longhorn is not installed. NAS and enterprise storage options remain
+Exploratory.
+
+### Phase 7 - Observability
 
 Status: Planned
 
-Objectives:
+Potential scope includes Prometheus, Grafana, Loki, Alertmanager, dashboards and
+alert rules. No stack or work order is currently approved.
 
-- Prometheus
-- Grafana
-- Loki
-- Alertmanager
-- dashboards
-- alert rules
-
-### Phase 7 — Storage
+### Phase 8 - Secrets and GitOps
 
 Status: Planned
 
-Objectives:
+- secrets-management architecture
+- resolution of the proposed GitOps decision
+- declarative reconciliation and delivery controls
 
-- storage architecture decision
-- Longhorn or alternative
-- persistent volumes
-- backup strategy
-- restore testing
+These capabilities require architecture review before tool selection or
+deployment.
 
-### Phase 8 — Developer Platform
+### Phase 9 - Developer Platform
 
 Status: Planned
 
-Objectives:
-
-- internal Git service
+- internal Git or source services
 - container registry
 - CI/CD experiments
 - build workloads
-- image publishing
 
-### Phase 9 — AI Platform
+Dependencies include observability, storage and secrets appropriate to the
+selected services.
 
-Status: Planned
-
-Objectives:
-
-- Ollama
-- Open WebUI
-- AnythingLLM
-- x86 or RK1 workload placement
-- local model experimentation
-
-### Phase 10 — Hybrid Expansion
+### Phase 10 - Hybrid Compute and AI
 
 Status: Planned
 
-Objectives:
-
-- x86 Linux laptop nodes
-- future Turing Pi integration
-- RK1 nodes
+- x86 Linux compute nodes
+- possible future Turing Pi or RK1 integration
 - architecture-aware scheduling
-- node labels and taints
+- AI model serving and supporting applications
 
----
+AI workloads depend on suitable compute, storage, monitoring and workload
+placement. No AI service is currently deployed.
+
+### Dependency summary
+
+| Capability | Status | Primary Dependency |
+|------------|--------|--------------------|
+| Additional disk qualification | Ready when enclosure and disk are available | Stable USB hardware |
+| Longhorn evaluation | Blocked | At least two qualified storage nodes total |
+| Backup target | Exploratory | Storage and recovery architecture |
+| Observability | Planned | Approved stack and work order |
+| GitOps | Planned | ADR-0005 resolution |
+| Secrets management | Planned | Security architecture |
+| x86 compute | Planned | Hardware admission and scheduling design |
+| AI platform | Planned | Compute, storage and observability |
 
 ## Design Decisions
 
-The roadmap is sequenced intentionally.
+Networking and trusted service exposure precede application growth. Hardware
+qualification precedes distributed storage. Observability, backup and secrets
+controls should precede important stateful workloads.
 
-Networking comes before monitoring and applications because services need stable names and exposure.
-
-Monitoring comes before heavier workloads because observability should exist before platform complexity increases.
-
-Storage comes before stateful services because persistent applications need a backup and restore model.
-
-AI comes later because it benefits from the compute tier and from a mature networking and monitoring foundation.
-
----
+Completion of a dependency does not automatically approve its successor.
 
 ## Best Practices
 
-When adding a new roadmap item:
-
-- identify the infrastructure dependency
-- create an ADR if the decision is significant
-- update documentation before or during implementation
-- define acceptance criteria
-- commit implementation and documentation together when practical
-
----
+- use only the defined roadmap statuses
+- state dependencies next to blocked or planned work
+- assign a work-order number only after review and approval
+- update the roadmap when a sprint changes a phase state
+- keep exploratory technology choices out of current architecture diagrams
 
 ## Future Improvements
 
-The roadmap will evolve as new hardware is added.
-
-Likely future roadmap additions:
-
-- VLAN segmentation
-- IPv6
-- external access through VPN
-- secrets management
-- GitOps
-- service catalog
-- automated backups
-- disaster recovery drills
-
----
+- refine sequencing after additional storage is qualified
+- add recovery objectives before stateful services
+- add release-level milestones when observability and GitOps are approved
 
 ## Related Documents
 
 - [Vision](vision.md)
 - [Architecture](architecture.md)
 - [Repository Structure](repository.md)
+- [Infrastructure Inventory](../reference/infrastructure-inventory.md)
+- [Service Catalog](../reference/service-catalog.md)
+- [Decision Register](../reference/decision-register.md)
+- [Storage](../infrastructure/storage.md)

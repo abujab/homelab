@@ -4,7 +4,8 @@
 
 ## Purpose
 
-This document consolidates known troubleshooting patterns for the current HomeLab Raspberry Pi, Ansible, K3s and MkDocs platform.
+This document consolidates known troubleshooting patterns for the current
+HomeLab Raspberry Pi, Ansible, K3s, storage and MkDocs platform.
 
 Each issue includes the problem, cause, resolution and verification.
 
@@ -18,6 +19,7 @@ This document covers:
 - Kubernetes issues
 - networking issues
 - certificate and HTTPS issues
+- qualified host-storage mount issues
 - documentation tooling issues
 
 This document does not replace future service-specific troubleshooting guides.
@@ -34,6 +36,7 @@ Most current operational issues fall into a small number of categories:
 - wired Ethernet and Wi-Fi baseline
 - cert-manager certificate issuance
 - Traefik HTTPS routing
+- qualified host-storage mount validation
 - local Python and MkDocs environment setup
 
 ## Architecture / Implementation
@@ -849,6 +852,42 @@ The response should contain:
 Hostname:
 ```
 
+## Storage
+
+### Qualified disk does not mount
+
+Problem:
+
+`/srv/longhorn` is not mounted on `pi4mB01`.
+
+Cause:
+
+The qualified disk may be disconnected, its filesystem label may be missing, or
+the discovered model and serial may not match inventory.
+
+Resolution:
+
+Inspect and reapply the declared mount without formatting or modifying the
+disk:
+
+```bash
+cd ansible
+ansible pi4mB01 -m command -a "findfs LABEL=pi-cl-storage"
+ansible-playbook playbooks/storage.yml --limit pi4mB01
+```
+
+The storage role intentionally fails before mounting an unexpected disk. Do not
+change identity variables or create a filesystem merely to bypass that check.
+
+Verification:
+
+```bash
+ansible pi4mB01 -m command -a "findmnt -n -o SOURCE,FSTYPE,TARGET /srv/longhorn"
+```
+
+The result must report ext4 at `/srv/longhorn`. This restores the qualified host
+mount only; it does not install Longhorn.
+
 ## Documentation
 
 ### MkDocs virtual environment not active
@@ -1092,3 +1131,7 @@ Future troubleshooting improvements may include:
 - [Ingress](../infrastructure/ingress.md)
 - [Certificate Operations](certificates.md)
 - [Security](../infrastructure/security.md)
+- [Storage](../infrastructure/storage.md)
+- [Infrastructure Inventory](../reference/infrastructure-inventory.md)
+- [Naming and Addressing](../reference/naming-and-addressing.md)
+- [Service Catalog](../reference/service-catalog.md)

@@ -270,5 +270,8 @@ local troubleshooting.
 - [Networking](../infrastructure/networking.md)
 - [Kubernetes](../infrastructure/kubernetes.md)
 - [Troubleshooting](troubleshooting.md)
+- [Naming and Addressing](../reference/naming-and-addressing.md)
+- [Service Catalog](../reference/service-catalog.md)
+- [Software Inventory](../reference/software-inventory.md)
 - [ADR-0010 Ingress Foundation](../decisions/ADR-0010-ingress-foundation.md)
 - [ADR-0012 Application Exposure Through the Shared Ingress Layer](../decisions/ADR-0012-application-exposure-through-shared-ingress.md)

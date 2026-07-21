@@ -6,7 +6,9 @@
 
 This document describes how Ansible is used to manage the HomeLab Raspberry Pi infrastructure.
 
-Ansible provides the repeatable automation layer for operating system baseline configuration, package maintenance and K3s installation.
+Ansible provides the repeatable automation layer for operating system baseline
+configuration, package maintenance, wired networking, K3s installation and
+qualified host-storage mounts.
 
 ## Scope
 
@@ -21,6 +23,7 @@ This document covers:
 - the `common` role
 - the `network` role
 - the `k3s` role
+- the `storage` role
 - idempotency
 - ssh-agent usage
 - verification philosophy
@@ -56,11 +59,13 @@ ansible/
 |   +-- baseline.yml
 |   +-- hardening.yml
 |   +-- k3s.yml
+|   +-- storage.yml
 |   +-- update.yml
 +-- roles/
     +-- common/
     +-- network/
     +-- k3s/
+    +-- storage/
 ```
 
 ### Inventory
@@ -74,6 +79,7 @@ Current groups:
 | `pis` | All Raspberry Pi nodes |
 | `k3s_server` | K3s control-plane node |
 | `k3s_agents` | K3s worker nodes |
+| `storage_nodes` | Nodes with independently qualified dedicated storage |
 
 The current group membership is:
 
@@ -91,6 +97,9 @@ k3s_agents
 +-- pi4mB02
 +-- pi4mB03
 +-- pi4mB04
+
+storage_nodes
++-- pi4mB01
 ```
 
 ### Group variables
@@ -126,6 +135,7 @@ Playbooks orchestrate roles or focused maintenance tasks.
 | `baseline.yml` | Applies the common and network baseline roles to all Raspberry Pi nodes |
 | `update.yml` | Updates APT packages across all Raspberry Pi nodes |
 | `k3s.yml` | Installs and verifies the K3s cluster |
+| `storage.yml` | Validates and mounts pre-existing qualified storage on `storage_nodes` |
 | `hardening.yml` | Reserved for security hardening work |
 
 ### Roles
@@ -139,6 +149,7 @@ The current roles are:
 | `common` | Shared operating system baseline for Raspberry Pi nodes |
 | `network` | Wired Ethernet baseline and Wi-Fi radio disablement |
 | `k3s` | K3s server, worker join, kubeconfig, labels and verification |
+| `storage` | Exact disk identity, filesystem and persistent mount validation |
 
 ### Common role
 
@@ -185,6 +196,18 @@ The `k3s` role currently manages:
 - kubeconfig API endpoint rewrite from localhost to the control-plane IP
 - worker node role labels
 - cluster verification
+
+### Storage role
+
+The `storage` role currently manages:
+
+- exact expected disk model and serial preflight checks
+- ext4 filesystem and `pi-cl-storage` label validation
+- an idempotent `/srv/longhorn` mount by filesystem label
+- installation of storage diagnostic tools
+- final mount-state verification
+
+The role does not partition or format disks and does not install Longhorn.
 
 ## Design Decisions
 
@@ -239,4 +262,7 @@ Future Ansible work may include:
 - [Security](security.md)
 - [Repository Structure](../overview/repository.md)
 - [Roadmap](../overview/roadmap.md)
+- [Infrastructure Inventory](../reference/infrastructure-inventory.md)
+- [Software Inventory](../reference/software-inventory.md)
+- [Storage](storage.md)
 - [ADR-0009 Wired Network for Cluster Nodes](../decisions/ADR-0009-wired-network-for-cluster-nodes.md)

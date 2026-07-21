@@ -1,242 +1,307 @@
-
 # Architecture
 
 ---
 
 ## Purpose
 
-This document describes the current and target architecture of HomeLab.
-
-It connects the project vision to the physical and logical design of the platform.
-
----
+This document describes the current HomeLab architecture and its separately
+defined target direction.
 
 ## Scope
 
-This document covers:
-
-- current platform topology
-- target hybrid architecture
-- management model
-- infrastructure tiers
-- Kubernetes topology
-- future networking direction
-- service discovery principles
-
-This document does not provide step-by-step operational procedures. Those belong in operations runbooks.
-
----
+It covers physical topology, Kubernetes roles, service exposure, certificate
+flow, current storage and potential future platform tiers. Operational commands
+belong in the runbooks, and exact lookup values belong in Reference.
 
 ## Background
 
-The platform currently consists of a four-node Raspberry Pi 4 Kubernetes cluster managed from an Arch Linux laptop.
+The current platform was built incrementally through Infrastructure Sprints 1
+through 9:
 
-The cluster was built in phases:
+1. Raspberry Pi and management workstation foundation
+2. Ansible automation
+3. K3s Kubernetes
+4. MetalLB and Pi-hole networking
+5. wired Ethernet transport
+6. Traefik ingress
+7. private PKI and cert-manager
+8. Pi-hole secure ingress
+9. qualification of one dedicated storage disk on `pi4mB01`
 
-1. install Raspberry Pi OS / Debian 13
-2. configure hostnames and IP reservations
-3. establish SSH key access
-4. create Ansible inventory
-5. build baseline role
-6. install K3s
-7. verify Kubernetes nodes and system pods
-8. introduce MetalLB and Pi-hole networking
-9. enforce wired Ethernet as the cluster node transport
-10. introduce Traefik ingress
-11. introduce private PKI and trusted internal TLS
-12. separate infrastructure protocols from browser-facing application ingress
-
-The current Kubernetes cluster is healthy.
-
-```text
-pi4mb01   Ready   control-plane
-pi4mb02   Ready   worker
-pi4mb03   Ready   worker
-pi4mb04   Ready   worker
-```
-
----
+The platform is operational, but it is not yet highly available and does not
+have replicated storage, GitOps, observability, a NAS or x86 compute nodes.
 
 ## Architecture / Implementation
 
-### Current physical topology
+### Current Architecture
+
+#### Physical topology
 
 ```text
-Arch Linux management laptop
-        │
-        │ SSH / Ansible / kubectl
-        ▼
+Arch Linux management workstation
+  |  Git / SSH / Ansible / kubectl / Helm / PKI / MkDocs
+  |
+Home router and default gateway 192.168.68.1
+  |
 Home LAN 192.168.68.0/22
-        │
-        └── TP-Link TL-SG108E Ethernet switch
-            ├── pi4mB01 / eth0 / 192.168.68.101
-            ├── pi4mB02 / eth0 / 192.168.68.102
-            ├── pi4mB03 / eth0 / 192.168.68.103
-            └── pi4mB04 / eth0 / 192.168.68.104
+  |
+TP-Link TL-SG108E Ethernet switch
+  |
+  +-- pi4mB01 / eth0 / 192.168.68.101
+  |     K3s control plane
+  |     qualified 160 GB disk mounted at /srv/longhorn
+  |
+  +-- pi4mB02 / eth0 / 192.168.68.102
+  |     K3s worker; known disk not connected or qualified
+  |
+  +-- pi4mB03 / eth0 / 192.168.68.103
+  |     K3s worker; no qualified dedicated storage
+  |
+  +-- pi4mB04 / eth0 / 192.168.68.104
+        K3s worker; no qualified dedicated storage
 ```
 
-### Current logical topology
+All cluster nodes use wired Ethernet. The Ansible network role verifies `eth0`,
+the inventory address and the default route before disabling Wi-Fi through
+NetworkManager.
+
+#### Kubernetes topology
 
 ```text
-K3s Cluster
-│
-├── pi4mb01
-│   └── control plane
-│
-├── pi4mb02
-│   └── worker
-│
-├── pi4mb03
-│   └── worker
-│
-└── pi4mb04
-    └── worker
+K3s cluster
+  |
+  +-- pi4mb01  Ready  control-plane
+  +-- pi4mb02  Ready  worker
+  +-- pi4mb03  Ready  worker
+  +-- pi4mb04  Ready  worker
+  |
+  +-- K3s-managed platform components
+  |     CoreDNS
+  |     Metrics Server
+  |     Local Path Provisioner
+  |     containerd
+  |
+  +-- Repository-managed platform components
+        MetalLB
+        Pi-hole
+        Traefik
+        cert-manager
 ```
 
-### Current platform services
+K3s packaged Traefik and ServiceLB remain disabled. MetalLB and the
+repository-managed Traefik release provide those responsibilities explicitly.
 
-K3s currently provides:
-
-- Kubernetes API server
-- CoreDNS
-- Metrics Server
-- Local Path Provisioner
-- containerd runtime
-
-HomeLab platform networking currently provides:
-
-- MetalLB Layer 2 LoadBalancer support
-- Pi-hole internal DNS
-- Traefik ingress
-- cert-manager certificate automation
-- HomeLab private PKI
-- `.home.arpa` service naming
-- Pi-hole DNS at `192.168.68.200` on TCP and UDP port 53
-- `pihole.home.arpa` at `192.168.68.201` over HTTPS
-- `test.home.arpa` at `192.168.68.201` over HTTPS
-- wired Ethernet node transport
-- Wi-Fi disabled on dedicated cluster nodes
-
-Traefik and ServiceLB were disabled during K3s installation so that ingress and load balancing could be introduced intentionally. MetalLB provides LAN LoadBalancer support. Repository-managed Traefik now provides the shared ingress endpoint.
-
-HomeLab uses an offline Root CA with separate Server and Client Issuing CAs.
-cert-manager uses only the Server Issuing CA to automate server certificates.
-Traefik terminates TLS and redirects HTTP traffic to HTTPS.
-Browser-facing applications normally use ClusterIP Services behind Traefik.
-Pi-hole demonstrates the documented exception model: DNS remains directly
-exposed through MetalLB while its Web UI uses shared ingress.
-
-### Target hybrid topology
+#### Service exposure
 
 ```text
-Management workstation
-        │
-        ▼
-Home network
-        │
-        ├── Raspberry Pi infrastructure tier
-        │       ├── control plane
-        │       ├── DNS
-        │       ├── ingress
-        │       ├── monitoring
-        │       └── lightweight services
-        │
-        ├── x86 compute tier
-        │       ├── AI workloads
-        │       ├── build workloads
-        │       ├── IBM ELM migration candidate
-        │       └── heavier services
-        │
-        └── edge/developer tier
-                ├── Windows workstation
-                ├── WSL services
-                └── development tools
+LAN client
+  |
+  +-- DNS query --------------------------+
+  |                                      |
+  |                         Pi-hole LoadBalancer
+  |                         192.168.68.200:53
+  |                                      |
+  |                         home.arpa answer
+  |                         192.168.68.201
+  |
+  +-- HTTPS request to 192.168.68.201 ----+
+                                         |
+                              MetalLB advertises Traefik
+                                         |
+                              Traefik :443 terminates TLS
+                                         |
+                         +---------------+---------------+
+                         |                               |
+               pihole.home.arpa                 test.home.arpa
+                         |                               |
+                  pihole-web Service                whoami Service
+                         |                               |
+                    Pi-hole Pod                    whoami Pod
 ```
 
----
+Pi-hole DNS is the direct non-HTTP exception at `192.168.68.200`. The Pi-hole
+Web UI and the validation application share Traefik at `192.168.68.201`.
+The [Service Catalog](../reference/service-catalog.md) is authoritative for
+service status and exposure.
+
+#### Certificate flow
+
+```text
+Offline trust domain
+
+HomeLab Root CA
+  |
+  +-- HomeLab Server Issuing CA
+  |     certificate and key imported as a runtime Kubernetes Secret
+  |                         |
+  |                  ClusterIssuer/homelab-server-ca
+  |                         |
+  |                  cert-manager Certificates
+  |                         |
+  |                  Kubernetes TLS Secrets
+  |                         |
+  |                  Traefik TLS termination
+  |
+  +-- HomeLab Client Issuing CA
+        offline; no current mTLS deployment
+```
+
+Clients trust HomeLab HTTPS only after the Root CA is installed and its
+fingerprint is verified. The Root CA private key is not stored in Kubernetes.
+
+#### Current storage topology
+
+```text
+Kubernetes workloads
+  |
+  +-- StorageClass/local-path
+        |
+        +-- node-local persistent volumes
+
+pi4mB01 host storage foundation
+  |
+  +-- Hitachi 160 GB disk
+        |
+        +-- ext4 LABEL=pi-cl-storage
+              |
+              +-- /srv/longhorn
+                    prepared host path only
+                    no Longhorn installation
+```
+
+Only `pi4mB01` has qualified dedicated storage. Local Path Provisioner remains
+the current Kubernetes storage component. No replica, failover or backup target
+is provided by the prepared host mount.
+
+#### Current architecture state
+
+| Capability | State |
+|------------|-------|
+| Four-node Raspberry Pi K3s cluster | Current |
+| Wired Ethernet cluster transport | Current |
+| MetalLB Layer 2 load balancing | Current |
+| Pi-hole internal DNS | Current |
+| Traefik shared ingress | Current |
+| Private PKI and cert-manager | Current |
+| Trusted `home.arpa` HTTPS for configured clients | Current |
+| Local Path Provisioner | Current |
+| Qualified dedicated disk on `pi4mB01` | Current |
+| Longhorn or another replicated storage layer | Not implemented |
+| NAS or centralized backup target | Not implemented |
+| Observability, GitOps and secrets management | Not implemented |
+| x86 compute and AI workloads | Not implemented |
+
+### Target Architecture
+
+The target direction extends the current platform without presenting future
+ideas as approved implementation.
+
+```text
+Management and automation plane
+  |
+  +-- Git / Ansible / Kubernetes manifests / Helm / documentation
+  |
+Hybrid Kubernetes platform
+  |
+  +-- ARM infrastructure tier
+  |     DNS, ingress and lightweight always-on services
+  |
+  +-- x86 compute tier
+  |     build, developer and AI workloads
+  |
+  +-- platform services
+        observability
+        GitOps
+        secrets management
+        persistent storage
+        backup and restore
+```
+
+#### Target storage direction
+
+```text
+Stateful workload
+  |
+  +-- PVC
+        |
+        +-- evaluated replicated storage platform
+              |
+              +-- qualified node storage on multiple nodes
+              |
+              +-- possible external backup target
+                    NAS is exploratory, not approved
+```
+
+Longhorn is a planned evaluation, not an approved deployment. Evaluation is
+blocked until at least one additional node has independently qualified storage
+and a separate work order defines architecture, safety and acceptance criteria.
+A centralized NAS or enterprise storage system is only a possible future backup
+or storage component.
+
+#### Target capability classifications
+
+| Capability | State | Dependency |
+|------------|-------|------------|
+| Additional qualified node storage | Planned | Enclosure availability and independent qualification |
+| Longhorn evaluation | Planned, blocked | At least one additional qualified storage node and approved work order |
+| Observability | Planned | Approved stack and work order |
+| GitOps | Planned | Resolution of ADR-0005 and approved work order |
+| Secrets management | Planned | Approved security architecture |
+| Centralized NAS or backup target | Exploratory | Storage and backup architecture |
+| x86 compute tier | Planned | Hardware admission and scheduling design |
+| AI workloads | Planned | Suitable compute, storage and observability |
 
 ## Design Decisions
 
-### K3s as Kubernetes distribution
+### K3s on Raspberry Pi
 
-K3s was selected because it is lightweight, ARM-friendly and suitable for Raspberry Pi hardware.
+K3s provides the current lightweight ARM64 Kubernetes foundation. The single
+control plane is accepted for this stage but remains a failure domain.
 
-### Raspberry Pis as initial infrastructure nodes
+### Explicit networking layers
 
-Raspberry Pis provide low-power always-on compute and are suitable for foundational services.
+MetalLB supplies LAN addresses, Pi-hole supplies internal DNS and Traefik
+supplies shared HTTP and HTTPS ingress. Each component has one primary role.
 
-### x86 laptops as future compute nodes
+### Private PKI
 
-x86 laptops provide more CPU and memory and are better suited for heavier workloads.
+An offline Root CA and separate issuing CAs protect the trust anchor while
+cert-manager automates short-lived server certificates.
 
-### `.home.arpa` as internal naming domain
+### Storage qualification before orchestration
 
-The internal domain is `.home.arpa`, because `.local` is reserved for mDNS and can cause conflicts.
-
-### Explicit infrastructure sequencing
-
-Networking services such as MetalLB and DNS are introduced before application services such as Grafana, Git or AI tools.
-
-### Wired Ethernet as cluster transport
-
-Dedicated cluster nodes use wired Ethernet for Kubernetes, MetalLB and platform-service traffic. Raspberry Pi Wi-Fi is retained only as an exceptional recovery option and is disabled by the managed baseline.
-
-### Traefik as shared ingress
-
-Traefik is the standard Kubernetes ingress controller. Future web applications should normally publish through host-based Ingress resources instead of receiving individual LoadBalancer IPs.
-
-### Private PKI for internal TLS
-
-The HomeLab Root CA is the private trust anchor for `home.arpa` services. The
-Root key remains offline and signs issuing CAs only. Server certificate
-automation is delegated to cert-manager through the Server Issuing CA.
-
-### Shared ingress for browser-facing applications
-
-Application hostnames resolve to Traefik, TLS terminates at Traefik and traffic
-is forwarded to internal ClusterIP Services. Dedicated LoadBalancer Services
-are reserved for non-HTTP protocols or approved end-to-end TLS exceptions.
-
----
+Hardware is qualified independently before it can participate in a future
+distributed storage evaluation. A mount-path name does not imply deployment.
 
 ## Best Practices
 
-- keep control plane and worker roles explicit in inventory
-- use Ansible groups to represent infrastructure intent
-- use Kubernetes labels for workload placement
-- avoid hardcoded IPs in application configuration
-- prefer service DNS names over machine names
-- use wired Ethernet for cluster node transport
-- publish web applications through shared ingress where practical
-- use cert-manager issued TLS certificates for ingress services
-- document every new platform capability
-- verify each infrastructure layer before building the next one
-
----
+- keep current and target diagrams separate
+- use reference pages for exact inventory, addresses and versions
+- express implementation through Ansible, Kubernetes manifests and Helm values
+- prefer service DNS names to machine names
+- add storage nodes only after independent qualification
+- require an ADR and work order for material architecture changes
+- verify backup and restore before hosting important stateful workloads
 
 ## Future Improvements
 
-Near-term architecture improvements:
-
-- additional `.home.arpa` service records
-
-Longer-term improvements:
-
-- high availability control plane
-- x86 worker nodes
-- storage layer
-- monitoring and logging
-- GitOps
-- AI platform
-- dedicated service catalog
-
----
+- qualify additional storage hardware
+- evaluate replicated storage only after its dependencies are met
+- add observability and secrets management through approved work orders
+- evaluate high-availability control-plane and x86 scheduling designs
+- define backup targets and recovery objectives
 
 ## Related Documents
 
 - [Vision](vision.md)
-- [Repository Structure](repository.md)
 - [Roadmap](roadmap.md)
+- [Repository Structure](repository.md)
+- [Reference](../reference/index.md)
+- [Infrastructure Inventory](../reference/infrastructure-inventory.md)
+- [Naming and Addressing](../reference/naming-and-addressing.md)
+- [Service Catalog](../reference/service-catalog.md)
+- [Decision Register](../reference/decision-register.md)
+- [Networking](../infrastructure/networking.md)
 - [Ingress](../infrastructure/ingress.md)
 - [PKI](../infrastructure/pki.md)
-- [ADR-0012 Application Exposure Through the Shared Ingress Layer](../decisions/ADR-0012-application-exposure-through-shared-ingress.md)
+- [Storage](../infrastructure/storage.md)

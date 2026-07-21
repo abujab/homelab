@@ -277,3 +277,6 @@ resource namespace.
 - [Ingress Operations](ingress.md)
 - [Backup](backup.md)
 - [Troubleshooting](troubleshooting.md)
+- [Service Catalog](../reference/service-catalog.md)
+- [Software Inventory](../reference/software-inventory.md)
+- [Decision Register](../reference/decision-register.md)

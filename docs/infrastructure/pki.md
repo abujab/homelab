@@ -61,7 +61,7 @@ certificate and key are imported into Kubernetes as the cert-manager CA issuer
 Secret named `homelab-server-ca` in the `cert-manager` namespace.
 
 The Client Issuing CA is reserved for future user, device and workload client
-certificates. It is not imported into Kubernetes during this work order.
+certificates. It is not imported into Kubernetes in the current implementation.
 
 Current certificate automation:
 
@@ -124,4 +124,7 @@ valid HomeLab issuance policy.
 - [Certificate Operations](../operations/certificates.md)
 - [Ingress](ingress.md)
 - [Security](security.md)
+- [Service Catalog](../reference/service-catalog.md)
+- [Software Inventory](../reference/software-inventory.md)
+- [Decision Register](../reference/decision-register.md)
 - [ADR-0011 PKI and TLS Foundation](../decisions/ADR-0011-pki-and-tls-foundation.md)

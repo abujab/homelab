@@ -52,6 +52,10 @@ No Longhorn, NFS, object storage, dedicated backup system or replicated storage 
 
 ### Qualified storage inventory
 
+The [Infrastructure Inventory](../reference/infrastructure-inventory.md) is
+authoritative for current hardware state; the following table retains the
+storage-specific implementation context.
+
 | Node | Disk | Capacity | Connection | Filesystem | Mount | Status |
 |------|------|----------|------------|------------|-------|--------|
 | pi4mB01 | Hitachi HTS545016B9SA02, serial `091028PBDB00QCJNRTDP` | 160 GB / 149 GiB | ASMedia ASM1051 USB 3 bridge | ext4, label `pi-cl-storage` | `/srv/longhorn` | Qualified |
@@ -80,7 +84,8 @@ The file-based baseline measured:
 | 4 KiB random read | 62 IOPS / 257 kB/s |
 | 4 KiB random write | 155 IOPS / 634 kB/s |
 
-The mount survived a node reboot and temporary-file write validation. Detailed command evidence is stored in `artifacts/WO-0009`.
+The mount survived a node reboot and temporary-file write validation. Detailed
+results are stored in the [WO-0009 validation evidence](https://github.com/abujab/homelab/blob/main/artifacts/WO-0009/validation.md).
 
 ### Supplemental power validation
 
@@ -157,3 +162,9 @@ Before important stateful applications are deployed, HomeLab should have a docum
 - [Kubernetes](kubernetes.md)
 - [Raspberry Pi Cluster](raspberry-pi-cluster.md)
 - [Roadmap](../overview/roadmap.md)
+- [Infrastructure Inventory](../reference/infrastructure-inventory.md)
+- [Service Catalog](../reference/service-catalog.md)
+- [ADR-0004 Persistent Storage](../decisions/ADR-0004-storage.md)
+- [Backup](../operations/backup.md)
+- [WO-0009 Storage Hardware Foundation](https://github.com/abujab/homelab/blob/main/work-orders/WO-0009-storage-hardware-foundation.md)
+- [WO-0009 Validation Evidence](https://github.com/abujab/homelab/blob/main/artifacts/WO-0009/validation.md)

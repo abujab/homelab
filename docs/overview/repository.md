@@ -1,224 +1,230 @@
-
 # Repository Structure
 
 ---
 
 ## Purpose
 
-This document explains the HomeLab repository structure and the responsibility of each major directory.
-
-The goal is to keep the repository understandable as it grows from a Raspberry Pi cluster into a hybrid private cloud platform.
-
----
+This document explains the tracked HomeLab repository structure and the
+responsibility of each major area.
 
 ## Scope
 
-This document covers:
-
-- repository layout
-- top-level directories
-- Ansible structure
-- documentation structure
-- future Kubernetes structure
-- rules for adding new content
-
-This document does not describe every individual Ansible task or Kubernetes manifest. Those details belong in infrastructure-specific documentation.
-
----
+It covers current top-level files, Ansible, Kubernetes, documentation,
+requirements, scripts, work orders, evidence and review history. It does not
+list every task, manifest or evidence file.
 
 ## Background
 
-The repository started with Ansible inventory and playbooks. It has since grown to include roles, ADRs and MkDocs documentation.
+The repository began with Ansible automation and now contains executable
+platform configuration, architecture decisions, operational documentation,
+work-order evidence and pull-request review records.
 
-To avoid drift, the repository follows a separation-of-responsibilities model.
-
-Each folder should have one clear reason to exist.
-
----
+Tracked repository content is the source of truth. Empty local directories,
+generated `site/` output and the local `.venv/` are not part of the reproducible
+repository model.
 
 ## Architecture / Implementation
 
-Current structure:
+Current tracked structure:
 
 ```text
 homelab/
-├── README.md
-├── mkdocs.yml
-├── PROJECT_STATE.md
-├── work-orders/
-├── ansible/
-├── kubernetes/
-├── docs/
-├── requirements/
-└── scripts/
+|-- AGENTS.md
+|-- README.md
+|-- PROJECT_STATE.md
+|-- mkdocs.yml
+|-- ansible/
+|   |-- ansible.cfg
+|   |-- inventories/home/
+|   |-- playbooks/
+|   `-- roles/
+|-- kubernetes/
+|   `-- platform/
+|       |-- certificates/
+|       |-- ingress/
+|       `-- networking/
+|-- docs/
+|   |-- overview/
+|   |-- decisions/
+|   |-- infrastructure/
+|   |-- operations/
+|   |-- reference/
+|   `-- development/
+|-- requirements/
+|-- scripts/
+|   `-- pki/
+|-- work-orders/
+|-- artifacts/
+|-- reviews/
+`-- manifests/
 ```
 
-### `README.md`
+### Root files
 
-The repository landing page.
+| Path | Responsibility |
+|------|----------------|
+| `README.md` | Concise repository landing page |
+| `PROJECT_STATE.md` | Verified current project state after completed sprints |
+| `AGENTS.md` | Repository engineering and automation standards |
+| `mkdocs.yml` | Documentation site configuration and navigation |
 
-It should remain short and should not become the main documentation body.
-
-### `PROJECT_STATE.md`
-
-Current state of the project.
-
-This file changes after sprint completion.
-
-### `work-orders/`
-
-Current and archived implementation work packages.
-
-The active sprint is described in:
-
-```text
-work-orders/CURRENT.md
-```
-
-When no sprint is active, `CURRENT.md` may be absent.
-
-Completed work orders are archived by ID, for example:
-
-```text
-work-orders/WO-1002-documentation-infrastructure.md
-```
-
-This file changes when a new sprint starts.
-
-### `mkdocs.yml`
-
-MkDocs site configuration.
-
-### `ansible/`
-
-Infrastructure configuration and automation.
-
-Current structure:
+### Ansible
 
 ```text
 ansible/
-├── ansible.cfg
-├── inventories/
-│   └── home/
-├── playbooks/
-└── roles/
+|-- ansible.cfg
+|-- kubeconfig
+|-- inventories/
+|   `-- home/
+|       |-- group_vars/all.yml
+|       |-- host_vars/
+|       `-- hosts.yml
+|-- playbooks/
+|   |-- baseline.yml
+|   |-- hardening.yml
+|   |-- k3s.yml
+|   |-- storage.yml
+|   `-- update.yml
+`-- roles/
+    |-- common/
+    |-- network/
+    |-- k3s/
+    `-- storage/
 ```
 
-### `ansible/playbooks/`
+Inventory describes where automation runs. Playbooks orchestrate work. Roles
+implement focused, reusable responsibilities. The local kubeconfig is used by
+documented operations and must be handled as an access-sensitive runtime file.
 
-Playbooks are orchestration entry points.
-
-Examples:
+### Kubernetes
 
 ```text
-baseline.yml
-update.yml
-k3s.yml
+kubernetes/platform/
+|-- networking/
+|   |-- metallb/
+|   `-- pihole/
+|-- ingress/
+|   `-- test-app/
+`-- certificates/
+    |-- issuers/
+    `-- test/
 ```
 
-### `ansible/roles/`
+Kubernetes resources are declarative manifests, Kustomize inputs or
+repository-managed Helm values. Runtime Secret values and private CA material
+are excluded from Git.
 
-Roles contain reusable implementation logic.
+The separate `manifests/` directory is a tracked placeholder and does not
+currently own deployed platform configuration.
 
-Current roles:
+### Documentation
+
+| Directory | Responsibility |
+|-----------|----------------|
+| `docs/overview/` | Vision, current and target architecture, roadmap and repository model |
+| `docs/decisions/` | Historical Architecture Decision Records and template |
+| `docs/infrastructure/` | Component design and implementation |
+| `docs/operations/` | Bootstrap, maintenance, recovery and troubleshooting |
+| `docs/reference/` | Authoritative inventory, addressing, software, services, ADR register and glossary |
+| `docs/development/` | Review and contribution workflow |
+
+### Requirements and scripts
+
+`requirements/docs.txt` pins the MkDocs build environment.
+`requirements/development.txt` and `requirements/testing.txt` are present for
+their named dependency scopes.
+
+`scripts/` contains repository workflow and validation helpers. The `pki/`
+subdirectory contains certificate-generation and inspection tooling; generated
+private material remains outside the repository.
+
+### Work orders and project state
+
+`work-orders/CURRENT.md` exists only while an approved sprint is active. After
+acceptance succeeds, it is renamed to its permanent ID-based archive, its status
+is changed to Complete, and `CURRENT.md` is removed.
+
+`PROJECT_STATE.md` describes what is true after completed work. It does not
+serve as the active implementation specification.
+
+### Evidence and reviews
+
+Work-order evidence is stored under an ID-specific directory:
 
 ```text
-common/
-k3s/
+artifacts/WO-NNNN/
 ```
 
-### `docs/`
+The directory contains validation output and reviewable evidence, not desired
+infrastructure state. Main repository overviews link to evidence rather than
+listing every artifact.
 
-MkDocs source documentation.
+Architecture review records are stored under `reviews/` after the implementation
+pull request is merged and its final-head approval can be archived. The review
+archive is created on a separate branch and pull request to avoid recursive
+review history.
 
-Current structure:
+### Pull-request workflow
 
 ```text
-docs/
-├── index.md
-├── overview/
-├── infrastructure/
-└── operations/
+Approved work order
+  -> implementation branch
+  -> code, documentation and evidence
+  -> validation
+  -> archive work order and update PROJECT_STATE.md
+  -> implementation pull request
+  -> architecture review and merge
+  -> review-archive branch and pull request
+  -> release
 ```
-
-### `kubernetes/`
-
-Reserved for Kubernetes manifests, Helm values and future GitOps configuration.
-
-### `requirements/`
-
-Python dependency files for local tooling.
-
-### `scripts/`
-
-Helper scripts for the development workflow.
-
----
 
 ## Design Decisions
 
-### Playbooks and roles are separated
+### Playbooks and roles are separate
 
-Roles are first-class reusable implementation units, not subfolders of playbooks.
+Playbooks remain orchestration entry points and roles own reusable logic, as
+recorded in ADR-0006.
 
-### Documentation is part of the repository
+### Documentation ownership is explicit
 
-Documentation evolves with the infrastructure and is version controlled.
+Reference owns stable lookup data, infrastructure owns design, operations owns
+procedures and ADRs own rationale.
 
-### Work orders and project state are separate
+### Evidence is not desired state
 
-`work-orders/CURRENT.md` describes what is being done next.
+Artifacts prove a work order was validated but do not replace Ansible or
+Kubernetes configuration.
 
-Archived work orders describe completed implementation history.
+### Generated and local state is excluded
 
-`PROJECT_STATE.md` describes what is true now.
-
-### README is intentionally short
-
-The README is not the engineering knowledge base. The MkDocs site is.
-
----
+The MkDocs `site/` directory, virtual environment and local secrets are
+regenerated or restored and are not authoritative tracked content.
 
 ## Best Practices
 
-When adding new files:
-
-- place them in the directory that matches their responsibility
-- avoid mixing architecture and operations in the same document
-- update `mkdocs.yml` when adding documentation pages
-- update `PROJECT_STATE.md` at the end of a sprint
-- update `work-orders/CURRENT.md` at the beginning of a sprint
-- archive completed work orders under `work-orders/`
-- do not duplicate stable reference data in many places
-
----
+- add content to an existing responsibility area whenever possible
+- keep playbooks small and implementation in roles
+- keep Kubernetes desired state under `kubernetes/`
+- keep stable lookup values under `docs/reference/`
+- archive work orders only after acceptance passes
+- store evidence under the matching work-order ID
+- update navigation when adding documentation pages
+- keep runtime credentials and private keys outside Git
 
 ## Future Improvements
 
-Planned repository additions:
-
-```text
-docs/infrastructure/
-docs/operations/
-docs/reference/
-docs/decisions/
-kubernetes/platform/
-kubernetes/apps/
-```
-
-Potential future additions:
-
-```text
-docs/images/
-docs/diagrams/
-tests/
-.github/workflows/
-```
-
----
+- add CI workflows only through an approved work order
+- establish an application directory convention when the first production-like application is approved
+- remove or assign the `manifests/` placeholder when its ownership is decided
+- automate documentation and manifest consistency checks
 
 ## Related Documents
 
 - [Vision](vision.md)
 - [Architecture](architecture.md)
 - [Roadmap](roadmap.md)
+- [Reference](../reference/index.md)
+- [Ansible](../infrastructure/ansible.md)
+- [Kubernetes](../infrastructure/kubernetes.md)
+- [Development Workflow](../development/workflow.md)
+- [ADR-0006 Repository Structure](../decisions/ADR-0006-repository-structure.md)

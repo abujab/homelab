@@ -69,10 +69,10 @@ pip install -r requirements/docs.txt
 
 Edit documentation in `docs/` and update `mkdocs.yml` when adding pages to navigation.
 
-Build the documentation:
+Build the documentation strictly:
 
 ```bash
-mkdocs build
+mkdocs build --strict
 ```
 
 For local review:
@@ -243,4 +243,6 @@ Future maintenance improvements may include:
 - [Ansible](../infrastructure/ansible.md)
 - [Kubernetes](../infrastructure/kubernetes.md)
 - [Ingress](../infrastructure/ingress.md)
+- [Software Inventory](../reference/software-inventory.md)
+- [Service Catalog](../reference/service-catalog.md)
 - [Repository Structure](../overview/repository.md)

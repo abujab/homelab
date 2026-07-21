@@ -1,5 +1,18 @@
 # HomeLab Architecture Review
 
+---
+
+## Purpose
+
+Use this template to review a HomeLab implementation pull request against its
+work order, architecture and validation evidence.
+
+## Scope
+
+The template records review findings and a final verdict. Completed review
+records are archived under `reviews/` through the documented development
+workflow.
+
 ## Review Information
 
 Reviewer
@@ -16,7 +29,7 @@ Release
 
 ---
 
-## Scope
+## Review Scope
 
 PASS / FAIL
 
@@ -93,3 +106,11 @@ APPROVE
 REQUEST CHANGES
 
 COMMENT
+
+---
+
+## Related Documents
+
+- [Development Workflow](workflow.md)
+- [Repository Structure](../overview/repository.md)
+- [Decision Register](../reference/decision-register.md)

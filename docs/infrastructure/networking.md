@@ -4,7 +4,8 @@
 
 ## Purpose
 
-This document describes the current HomeLab networking foundation and the planned direction for internal service discovery.
+This document describes the current HomeLab networking foundation and the rules
+for internal service discovery.
 
 Networking is intentionally documented before additional platform services are introduced because future services need stable names and predictable exposure.
 
@@ -23,7 +24,9 @@ This document covers:
 - `.home.arpa` DNS naming
 - IBM ELM future DNS target
 
-This document does not define a final production network architecture. VLANs, segmentation, TLS automation and external access are future topics.
+This document does not define a final production network architecture. VLANs,
+segmentation and external access are future topics. Internal TLS automation is
+current and is documented separately.
 
 ## Background
 
@@ -39,7 +42,8 @@ HomeLab now exposes platform services on the LAN through MetalLB and uses Pi-hol
 
 All dedicated Raspberry Pi Kubernetes nodes use wired Ethernet through a TP-Link TL-SG108E switch. Wi-Fi is disabled through Ansible for normal operation.
 
-Traefik provides the shared HTTP and HTTPS ingress endpoint for future web applications.
+Traefik provides the current shared HTTP and HTTPS ingress endpoint for
+browser-facing applications.
 
 ## Architecture / Implementation
 
@@ -66,6 +70,9 @@ Home LAN 192.168.68.0/22
 ```
 
 Current DHCP reservations:
+
+The [Naming and Addressing](../reference/naming-and-addressing.md) page is
+authoritative for allocations; this table documents their networking context.
 
 | Host | Reserved IP |
 |------|-------------|
@@ -226,12 +233,10 @@ Current service names:
 The Pi-hole DNS resolver address remains `192.168.68.200`. Resolver addresses
 and application-hostname destinations are separate responsibilities.
 
-Reserved future names:
+Reserved name:
 
 | Name | Purpose |
 |------|---------|
-| grafana.home.arpa | Future monitoring UI |
-| registry.home.arpa | Future container registry |
 | elm.home.arpa | Future IBM ELM endpoint |
 
 ## Design Decisions
@@ -295,7 +300,6 @@ resource instead of receiving their own external LoadBalancer IP.
 Planned networking work includes:
 
 - IBM ELM publication through `elm.home.arpa`
-- TLS certificate management
 - additional `.home.arpa` service records
 - future network segmentation or VLAN design
 
@@ -323,6 +327,8 @@ curl --connect-timeout 5 -I http://192.168.68.200/
 - [Security](security.md)
 - [Architecture](../overview/architecture.md)
 - [Roadmap](../overview/roadmap.md)
+- [Naming and Addressing](../reference/naming-and-addressing.md)
+- [Service Catalog](../reference/service-catalog.md)
 - [ADR-0008 Networking Foundation](../decisions/ADR-0008-networking-foundation.md)
 - [ADR-0009 Wired Network for Cluster Nodes](../decisions/ADR-0009-wired-network-for-cluster-nodes.md)
 - [ADR-0010 Ingress Foundation](../decisions/ADR-0010-ingress-foundation.md)
