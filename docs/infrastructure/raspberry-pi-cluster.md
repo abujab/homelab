@@ -54,6 +54,10 @@ Home LAN 192.168.68.0/22
 
 Current node inventory:
 
+The [Infrastructure Inventory](../reference/infrastructure-inventory.md) is
+authoritative for current node and storage state; this table summarizes the
+cluster design.
+
 | Host | IP Address | Hardware | Operating System | Architecture | Current Role |
 |------|------------|----------|------------------|--------------|--------------|
 | pi4mB01 | 192.168.68.101 | Raspberry Pi 4 Model B | Raspberry Pi OS / Debian 13 | ARM64 | K3s control plane |
@@ -137,4 +141,6 @@ Planned expansion includes:
 - [Ansible](ansible.md)
 - [Kubernetes](kubernetes.md)
 - [Networking](networking.md)
+- [Infrastructure Inventory](../reference/infrastructure-inventory.md)
+- [Naming and Addressing](../reference/naming-and-addressing.md)
 - [ADR-0009 Wired Network for Cluster Nodes](../decisions/ADR-0009-wired-network-for-cluster-nodes.md)

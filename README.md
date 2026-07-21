@@ -1,26 +1,28 @@
-
 # HomeLab
 
 Enterprise-inspired private cloud and hybrid homelab platform.
 
-HomeLab is a long-term engineering project to design, build, operate and document a reproducible private infrastructure platform using commodity hardware. The initial platform is a four-node Raspberry Pi Kubernetes cluster. The target platform will expand into a hybrid ARM and x86 homelab with internal DNS, ingress, monitoring, storage, automation and AI workloads.
+HomeLab is a long-term engineering project for building and operating a
+reproducible private infrastructure platform with commodity hardware. The
+current platform is a four-node Raspberry Pi K3s cluster; the target platform
+adds x86 compute, stronger storage, observability, GitOps and AI workloads only
+through approved incremental work.
 
 ---
 
-## Current status
+## Current Status
 
 | Area | Status |
 |------|--------|
-| Raspberry Pi 4 cluster | Complete |
-| Raspberry Pi OS / Debian 13 baseline | Complete |
-| SSH key access | Complete |
-| Ansible inventory and roles | Complete |
-| K3s Kubernetes cluster | Complete |
-| MkDocs documentation platform | In progress |
-| Networking services | Planned |
-| Monitoring | Planned |
-| Storage | Planned |
-| AI platform | Planned |
+| Raspberry Pi, Ansible and K3s foundations | Complete |
+| Wired networking, MetalLB and Pi-hole DNS | Complete |
+| Traefik ingress, private PKI and trusted HTTPS | Complete |
+| MkDocs overview, infrastructure, operations and reference documentation | Complete |
+| Storage hardware foundation | Partial: one node qualified |
+| Replicated Kubernetes storage | Not installed |
+| Observability, GitOps, secrets management and AI platform | Planned |
+
+The current verified platform state is maintained in `PROJECT_STATE.md`.
 
 ---
 
@@ -28,60 +30,44 @@ HomeLab is a long-term engineering project to design, build, operate and documen
 
 The documentation site is built with MkDocs Material.
 
-To preview locally:
-
 ```bash
-cd homelab
 source .venv/bin/activate
 mkdocs serve
 ```
 
-Then open:
-
-```text
-http://127.0.0.1:8000
-```
-
-The documentation starts at:
-
-```text
-docs/index.md
-```
+Open `http://127.0.0.1:8000`. Documentation sources begin at
+`docs/index.md`; authoritative lookup tables are under `docs/reference/`.
 
 ---
 
-## Guiding principles
-
-HomeLab follows these principles:
+## Guiding Principles
 
 - Infrastructure as Code
 - Git as the source of truth
-- Idempotent automation
-- Documentation-first engineering
+- idempotent automation
+- documentation-first engineering
 - Architecture Decision Records
-- Human-readable operational runbooks
-- Hybrid ARM and x86 design
-- Reproducibility over manual configuration
+- reproducible operational runbooks
+- service identities separate from machine identities
 
 ---
 
-## Current cluster
+## Current Cluster
 
-| Host | IP address | Role |
+| Host | IP Address | Role |
 |------|------------|------|
-| pi4mB01 | 192.168.68.101 | K3s control plane |
-| pi4mB02 | 192.168.68.102 | K3s worker |
-| pi4mB03 | 192.168.68.103 | K3s worker |
-| pi4mB04 | 192.168.68.104 | K3s worker |
+| `pi4mB01` | `192.168.68.101` | K3s control plane |
+| `pi4mB02` | `192.168.68.102` | K3s worker |
+| `pi4mB03` | `192.168.68.103` | K3s worker |
+| `pi4mB04` | `192.168.68.104` | K3s worker |
+
+See the documentation [Infrastructure Inventory](docs/reference/infrastructure-inventory.md)
+and [Service Catalog](docs/reference/service-catalog.md) for current details.
 
 ---
 
-## Next milestone
+## Next Eligible Work
 
-The next infrastructure milestone is the networking foundation:
-
-- MetalLB
-- Ingress controller
-- Pi-hole / internal DNS
-- `.home.arpa` naming
-- internal service URLs
+Storage expansion and Longhorn evaluation remain conditional on at least one
+additional qualified storage node, stable USB operation, approved storage
+architecture and a separately reviewed work order.

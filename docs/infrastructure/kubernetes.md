@@ -111,7 +111,8 @@ The K3s server is installed with:
 --disable traefik
 ```
 
-ServiceLB is disabled so that LAN load balancing can be introduced intentionally, likely through MetalLB.
+ServiceLB remains disabled. MetalLB now provides explicit LAN LoadBalancer
+addresses from the repository-managed pool.
 
 Traefik is disabled so ingress can be selected and documented deliberately outside the K3s packaged component.
 
@@ -149,11 +150,13 @@ Worker labels make the node list easier to read and prepare the platform for fut
 
 Planned Kubernetes improvements include:
 
-- TLS certificate management
 - persistent storage evaluation
 - GitOps-based workload delivery
 - high-availability control-plane evaluation
 - x86 and additional ARM worker expansion
+
+TLS certificate management is current through cert-manager and the HomeLab
+private PKI; it is not a future Kubernetes capability.
 
 Useful verification commands:
 
@@ -173,3 +176,6 @@ kubectl --kubeconfig ansible/kubeconfig top nodes
 - [Storage](storage.md)
 - [Security](security.md)
 - [Architecture](../overview/architecture.md)
+- [Service Catalog](../reference/service-catalog.md)
+- [Software Inventory](../reference/software-inventory.md)
+- [Decision Register](../reference/decision-register.md)

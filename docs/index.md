@@ -1,113 +1,92 @@
-
 # HomeLab Documentation
 
 ---
 
 ## Purpose
 
-This documentation describes the HomeLab platform: a private cloud and hybrid homelab built with enterprise infrastructure principles.
-
-The goal is not only to operate services at home. The goal is to build an engineering-quality platform that is reproducible, documented, automated and understandable years later.
-
----
+This documentation describes the current and target HomeLab platform: a private
+cloud built with reproducible automation, reviewed architecture and operational
+runbooks.
 
 ## Scope
 
-This documentation currently covers:
+The documentation covers:
 
-- project vision
-- target architecture
-- repository structure
-- implementation roadmap
-- current Raspberry Pi Kubernetes cluster
-- Ansible-based configuration management
-- K3s Kubernetes bootstrap
+- project vision, current architecture and target direction
+- the Raspberry Pi, Ansible and K3s foundations
+- wired networking, MetalLB, Pi-hole, Traefik and private HTTPS
+- qualified host storage and current storage limitations
+- bootstrap, maintenance, recovery and troubleshooting procedures
+- authoritative inventory, addressing, software, service and ADR references
 
-This documentation does not yet cover the future networking, storage, monitoring and AI platform in full detail. Those areas will be documented as they are implemented.
-
----
+Observability, replicated storage, GitOps, secrets management, NAS, x86 compute
+and AI workloads remain future capabilities unless explicitly marked otherwise.
 
 ## Background
 
-HomeLab began as a Raspberry Pi cluster project. It evolved into a broader private infrastructure platform.
+HomeLab began as a four-node Raspberry Pi cluster and now operates as a small
+private-cloud foundation managed from an Arch Linux workstation.
 
-The current system already includes:
+Current platform capabilities include:
 
-- four Raspberry Pi 4 Model B nodes
-- Raspberry Pi OS / Debian 13
-- Ansible automation
-- K3s Kubernetes
-- MkDocs Material documentation
-- Git-based source control
-
-Future expansion will include x86 Linux laptops, Turing Pi hardware, RK1 nodes, AI workloads, local DNS, ingress, monitoring and possibly self-hosted developer tooling.
-
----
+- four Raspberry Pi 4 Model B nodes running the Debian 13 baseline
+- Ansible-managed operating system, wired network and K3s configuration
+- a K3s cluster with one control plane and three workers
+- MetalLB Layer 2 LoadBalancer support and Pi-hole internal DNS
+- Traefik shared ingress at `192.168.68.201`
+- a private two-tier PKI and cert-manager certificate automation
+- trusted HTTPS for `test.home.arpa` and `pihole.home.arpa`
+- one qualified dedicated disk on `pi4mB01`
 
 ## Architecture / Implementation
 
-The documentation is organized into a progressive structure.
+The site is organized by responsibility:
 
 ```text
 Overview
-    High-level vision and architecture.
+    Vision, current and target architecture, roadmap and repository model.
+
+Architecture Decisions
+    Historical rationale for significant design choices.
 
 Infrastructure
-    Implementation details for Ansible, Kubernetes, networking, storage and security.
+    Component design and repository-controlled implementation.
 
 Operations
-    Runbooks for maintaining, rebuilding and troubleshooting the platform.
+    Bootstrap, maintenance, recovery and troubleshooting procedures.
 
 Reference
-    Stable facts such as IP addresses, inventory, naming conventions and glossary.
+    Authoritative inventory, naming, versions, services, ADR register and terms.
 
-Decisions
-    Architecture Decision Records.
+Development
+    Review and contribution workflow.
 ```
 
-This sprint creates the Overview section. Later documentation sprints will add Infrastructure, Operations, Reference and ADR navigation.
-
----
+Start with [Architecture](overview/architecture.md) for the system model or
+[Reference](reference/index.md) for an exact current value.
 
 ## Design Decisions
 
-The documentation follows these design decisions:
-
-- Markdown is the documentation source format.
-- MkDocs Material is the documentation platform.
-- Documentation is version controlled with the rest of the infrastructure.
-- Architectural rationale is captured in ADRs.
-- Implementation details are kept separate from high-level architecture.
-- Duplication is avoided; documents should link rather than repeat.
-
----
+- Markdown in Git is the documentation source.
+- MkDocs Material builds the navigable site.
+- Reference pages own stable lookup data.
+- Architecture pages separate current and target state.
+- Operations pages remain command-oriented.
+- ADRs preserve decision history rather than being rewritten as status reports.
 
 ## Best Practices
 
-When updating documentation:
-
-- update documentation in the same commit as infrastructure changes when possible
-- avoid duplicating IP addresses or inventory details in many files
-- prefer diagrams and tables for topology and reference information
-- keep operational instructions command-oriented
-- keep architecture documents focused on rationale and structure
-
----
+- update documentation in the same work order as infrastructure changes
+- verify current claims against executable configuration and evidence
+- link to authoritative reference tables instead of duplicating them
+- label planned and exploratory capabilities explicitly
+- run `mkdocs build --strict` before review
 
 ## Future Improvements
 
-Planned documentation additions:
-
-- infrastructure documentation
-- operations runbooks
-- reference documents
-- ADR navigation
-- network topology diagrams
-- Kubernetes topology diagrams
-- service catalog
-- troubleshooting knowledge base
-
----
+- automate documentation validation in CI
+- add reference generation checks against Ansible and Kubernetes sources
+- expand operations and terminology only when new platform capabilities exist
 
 ## Related Documents
 
@@ -115,3 +94,6 @@ Planned documentation additions:
 - [Architecture](overview/architecture.md)
 - [Repository Structure](overview/repository.md)
 - [Roadmap](overview/roadmap.md)
+- [Reference](reference/index.md)
+- [Service Catalog](reference/service-catalog.md)
+- [Decision Register](reference/decision-register.md)

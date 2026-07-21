@@ -151,3 +151,5 @@ Planned security improvements include:
 - [Networking](networking.md)
 - [PKI](pki.md)
 - [Repository Structure](../overview/repository.md)
+- [Service Catalog](../reference/service-catalog.md)
+- [Decision Register](../reference/decision-register.md)

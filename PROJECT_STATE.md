@@ -3,13 +3,14 @@
 **Project:** HomeLab  
 **Owner:** Abdul Jabbar  
 **Status:** Active Development  
-**Last Updated:** 2026-07-19
+**Last Updated:** 2026-07-21
 
 ---
 
 ## Current Platform State
 
-HomeLab has completed its first nine engineering implementation sprints and the first three documentation sprints.
+HomeLab has completed its first nine engineering implementation sprints and the
+first four documentation sprints.
 
 The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, shared Traefik application ingress, trusted HTTPS, automated cert-manager certificate lifecycle, Ansible automation and MkDocs Material documentation.
 
@@ -210,6 +211,26 @@ Completed:
 - mkdocs.yml navigation updated with Operations section
 - work order workflow moved to work-orders/CURRENT.md with completed work orders archived by ID
 
+### Documentation Sprint 4 — Architecture and Reference Refresh
+
+Status: Complete
+
+Completed:
+
+- complete documentation audit recorded under `artifacts/WO-1004/`
+- seven-page Reference section created for inventory, naming, addressing, software, services, ADRs and terminology
+- current and target architecture separated with physical, exposure, certificate and storage diagrams
+- roadmap refreshed with explicit Complete, Planned, Blocked and Exploratory states
+- repository model refreshed for current Ansible, Kubernetes, documentation, work-order, evidence and review structures
+- README and documentation landing page corrected for the platform through WO-0009
+- verified infrastructure and operations drift corrected without changing executable infrastructure
+- all tracked documentation pages made reachable through MkDocs navigation
+- internal links, terminology, current-versus-planned state and changed-path allowlist reviewed
+- strict MkDocs build and whitespace validation completed successfully
+- pull-request review identified a historically tracked administrator
+  kubeconfig; the credential was revoked and repository remediation was handled
+  separately in security PR #15
+
 ---
 
 ## Current Infrastructure
@@ -279,10 +300,15 @@ Completed sections:
 - Backup
 - PKI
 - Certificates
-
-Next documentation area:
-
-- Reference documentation
+- Reference
+- Infrastructure Inventory
+- Naming and Addressing
+- Software Inventory
+- Service Catalog
+- Decision Register
+- Glossary
+- Development Workflow
+- Architecture Review
 
 ---
 
@@ -301,14 +327,27 @@ Known PKI risk:
 - Root CA trust installation is still operator-controlled and pending on each client platform; clients without the Root CA will report the private certificate chain as untrusted.
 - CA material requires two verified encrypted offline backups in separate locations; Kubernetes and the management workstation are not sufficient backup targets.
 
-Known documentation risk:
+Known repository security follow-up:
 
-- Reference data such as inventory, naming, IP addressing and software versions should be consolidated in the planned reference documentation sprint.
+- the exposed K3s administrator credential has been invalidated, the generated
+  kubeconfig is excluded from Git, and branch and tag histories have been
+  rewritten; GitHub Support must still dereference affected pull-request refs
+  and clear cached views before server-side expungement is complete.
+
+Known documentation limitations:
+
+- ADR-0003 remains `Proposed` although K3s is implemented; status reconciliation requires explicit architecture review.
+- ADR-0007 is an empty tracked file and remains `Pending verification` in the decision register.
+- K3s, Kubernetes, containerd and several bundled component runtime versions are not pinned or verifiable from repository-controlled evidence.
 
 ---
 
-## Next Work Package
+## Next Eligible Work
 
-Infrastructure Sprint 10 — Longhorn evaluation, subject to additional qualified node storage and an approved work order.
+No successor work order is approved.
 
-Create `work-orders/CURRENT.md` when the next work order is prepared.
+The next eligible infrastructure activity is qualification of additional
+storage hardware when the SATA-to-USB enclosure and disk are available.
+Longhorn evaluation remains blocked until at least one additional storage node
+is independently qualified, USB operation is stable, storage architecture is
+approved and a separate work order is reviewed.

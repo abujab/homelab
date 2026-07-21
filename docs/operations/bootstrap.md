@@ -26,6 +26,7 @@ This document covers:
 - K3s installation
 - networking foundation installation
 - ingress foundation installation
+- qualified storage mount restoration
 - wired network baseline validation
 - cluster verification
 - MkDocs setup
@@ -45,6 +46,7 @@ The current platform consists of:
 - K3s for Kubernetes
 - MkDocs Material for documentation
 - TP-Link TL-SG108E wired switch for Raspberry Pi node transport
+- one qualified dedicated disk on `pi4mB01`, mounted independently of Kubernetes
 
 ## Architecture / Implementation
 
@@ -395,13 +397,36 @@ validate routing directly while preserving the Host header:
 curl -H 'Host: test.home.arpa' http://192.168.68.201
 ```
 
-### 14. Verify MkDocs
+### 14. Restore qualified storage mounts
+
+The storage playbook validates and mounts only disks already prepared and
+listed in the `storage_nodes` inventory group:
+
+```bash
+cd ansible
+ansible-playbook playbooks/storage.yml
+cd ..
+```
+
+The role requires the existing `pi-cl-storage` ext4 label and exact expected
+model and serial. It does not partition or format disks. A missing, replaced or
+unprepared disk requires a separately approved qualification procedure.
+
+Verify the current qualified mount:
+
+```bash
+ssh abdul@192.168.68.101 'findmnt /srv/longhorn'
+```
+
+Longhorn is not installed by this step.
+
+### 15. Verify MkDocs
 
 From the repository root:
 
 ```bash
 source .venv/bin/activate
-mkdocs build
+mkdocs build --strict
 mkdocs serve
 ```
 
@@ -472,4 +497,8 @@ Future bootstrap improvements may include:
 - [Ansible](../infrastructure/ansible.md)
 - [Kubernetes](../infrastructure/kubernetes.md)
 - [Networking](../infrastructure/networking.md)
+- [Storage](../infrastructure/storage.md)
+- [Infrastructure Inventory](../reference/infrastructure-inventory.md)
+- [Naming and Addressing](../reference/naming-and-addressing.md)
+- [Service Catalog](../reference/service-catalog.md)
 - [Repository Structure](../overview/repository.md)

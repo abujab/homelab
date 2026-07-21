@@ -212,11 +212,10 @@ Future backup expectations:
 
 ### Kubernetes manifests
 
-The `kubernetes/` and `manifests/` directories are currently reserved for future declarative configuration.
-
-When platform services are added, manifests should be committed and documented as part of the recovery model.
-
-The current networking manifests under `kubernetes/platform/networking/` are protected by Git when committed and pushed.
+The current Kubernetes desired state is stored under `kubernetes/platform/`,
+including networking, ingress and certificate configuration. These files are
+protected by Git when committed and pushed. The separate `manifests/` directory
+is only a tracked placeholder and does not own current deployed resources.
 
 ### Pi-hole configuration
 
@@ -299,3 +298,5 @@ Future backup work should include:
 - [Storage](../infrastructure/storage.md)
 - [Security](../infrastructure/security.md)
 - [Repository Structure](../overview/repository.md)
+- [Infrastructure Inventory](../reference/infrastructure-inventory.md)
+- [Service Catalog](../reference/service-catalog.md)

@@ -98,6 +98,10 @@ If the host key changed, remove the old key from `known_hosts` for that IP or ho
 
 If the replacement uses the same hostname and reserved IP, no inventory change should be required.
 
+Use the [Infrastructure Inventory](../reference/infrastructure-inventory.md) and
+[Naming and Addressing](../reference/naming-and-addressing.md) as the current
+lookup sources before changing identity or addressing.
+
 If the IP address intentionally changed, update the matching file under:
 
 ```text
@@ -313,3 +317,7 @@ Future recovery improvements should include:
 - [Raspberry Pi Cluster](../infrastructure/raspberry-pi-cluster.md)
 - [Kubernetes](../infrastructure/kubernetes.md)
 - [Networking](../infrastructure/networking.md)
+- [Storage](../infrastructure/storage.md)
+- [Infrastructure Inventory](../reference/infrastructure-inventory.md)
+- [Naming and Addressing](../reference/naming-and-addressing.md)
+- [Service Catalog](../reference/service-catalog.md)

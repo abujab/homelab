@@ -6,8 +6,8 @@
 
 This document describes the HomeLab ingress foundation.
 
-Ingress provides a shared HTTP and HTTPS entry point for future web
-applications.
+Ingress provides the shared HTTP and HTTPS entry point for current and future
+browser-facing applications.
 
 ## Scope
 
@@ -74,7 +74,7 @@ Current ingress endpoint:
 | HTTP port | `80` |
 | HTTPS port | `443` |
 | HTTP redirect | Redirects to HTTPS |
-| TLS certificate | `ingress/test-home-arpa-tls` |
+| TLS certificates | Per-host Secrets including `ingress/test-home-arpa-tls` and `networking/pihole-home-arpa-tls` |
 | Dashboard exposure | Not exposed |
 
 ### Relationship to Pi-hole
@@ -174,7 +174,7 @@ explicit architectural exception.
 HTTP-to-HTTPS redirection is configured at the Traefik `web` entry point so
 current ingress routes use HTTPS by default.
 
-No wildcard DNS records are created in this sprint.
+No wildcard DNS record exists in the current configuration.
 
 ## Best Practices
 
@@ -202,5 +202,8 @@ No wildcard DNS records are created in this sprint.
 - [Security](security.md)
 - [PKI](pki.md)
 - [Ingress Operations](../operations/ingress.md)
+- [Naming and Addressing](../reference/naming-and-addressing.md)
+- [Service Catalog](../reference/service-catalog.md)
+- [Software Inventory](../reference/software-inventory.md)
 - [ADR-0010 Ingress Foundation](../decisions/ADR-0010-ingress-foundation.md)
 - [ADR-0012 Application Exposure Through the Shared Ingress Layer](../decisions/ADR-0012-application-exposure-through-shared-ingress.md)
