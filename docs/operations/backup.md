@@ -79,7 +79,10 @@ Protected content:
 - group variables
 - playbooks
 - roles
-- kubeconfig file if tracked in the repository
+
+The generated `ansible/kubeconfig` contains cluster-administrator credentials
+and is intentionally excluded from Git. Recover it by rerunning the K3s
+playbook rather than restoring it from the repository.
 
 Risk:
 

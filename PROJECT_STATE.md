@@ -52,7 +52,8 @@ Completed:
 - K3s installed
 - pi4mB01 configured as control-plane node
 - pi4mB02, pi4mB03 and pi4mB04 joined as workers
-- kubeconfig fetched to management workstation
+- administrator kubeconfig generated on the management workstation with
+  restrictive permissions and excluded from Git
 - worker nodes labelled
 - cluster verification completed
 

@@ -122,6 +122,7 @@ The next baseline playbook run restores the managed Wi-Fi-disabled state.
 - prefer wired Ethernet for cluster node access and platform traffic
 - avoid committing secrets to the repository
 - avoid committing private keys, generated Secret manifests or PKCS#12 bundles
+- keep the generated administrator kubeconfig permission-restricted and outside Git
 - document security assumptions and limitations explicitly
 
 ## Future Improvements
