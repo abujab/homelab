@@ -39,14 +39,6 @@
     storage_identity_data: >-
       {{ (storage_identity.stdout | from_json).blockdevices | first }}
 
-- name: Read SMART disk identity for {{ storage_disk.id }}
-  ansible.builtin.command:
-    cmd: >-
-      smartctl -d {{ storage_disk.smart_device_type | default('sat') }}
-      -i {{ storage_resolved_device }}
-  register: storage_smart_identity
-  changed_when: false
-
 - name: Read disk topology for {{ storage_disk.id }}
   ansible.builtin.command:
     cmd: "lsblk -nrpo PATH,TYPE,MOUNTPOINTS {{ storage_resolved_device }}"

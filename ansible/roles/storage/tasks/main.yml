@@ -2,8 +2,9 @@
 - name: Validate storage inventory configuration
   ansible.builtin.import_tasks: validate-config.yml
 
-- name: Configure declared USB-storage compatibility quirks
+- name: Configure explicitly managed USB compatibility quirks
   ansible.builtin.import_tasks: configure-usb-quirks.yml
+  when: storage_manage_usb_quirks | bool
 
 - name: Install storage lifecycle packages
   ansible.builtin.apt:

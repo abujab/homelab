@@ -37,6 +37,7 @@ was never initialized or reformatted.
 | Kernel logs | Pass — no matched USB, UAS, block, ext4, read-only or undervoltage error |
 | Reboot persistence | Pass — two boots with powered enclosure; same UUID mounted read/write |
 | Idempotency | Pass — both final two-node runs reported `changed=0`, `failed=0` |
+| Review safety remediation | Pass — opt-in quirks/reboots, exact metadata/fstab checks, targeted qualification and failure cleanup verified |
 
 The evidence files in this directory contain concise, sanitized values. The
 erase token is intentionally omitted from stored host state and inventory.
@@ -46,6 +47,31 @@ kernel error. The count remained 1 through a second reboot and five additional
 minutes of mixed I/O. This is not a media-sector failure, but it remains a
 monitored cable, bridge or interface limitation. Any future increase requires
 requalification before storage use expands.
+
+### Review remediation validation
+
+The requested safety corrections were validated on 2026-07-26:
+
+- all USB quirk tasks were skipped on both storage nodes with the default
+  `storage_manage_usb_quirks: false`
+- `/boot/firmware/cmdline.txt` SHA-256 values were unchanged across two normal
+  reconciliation runs: `d9be6a3b...12af60a` on pi4mB01 and
+  `38d5ab57...151ca2` on pi4mB02
+- boot IDs were unchanged across those runs, proving neither node rebooted
+- filesystem type, label and UUID were read separately and compared exactly
+- each active mount UUID matched the prepared filesystem UUID and its expected
+  physical disk
+- each `/etc/fstab` entry had exact UUID source, target, ext4 type, required
+  options, dump `0` and pass `2`
+- qualification without `storage_target_disk_id` failed in the pre-task before
+  role execution
+- a deliberate qualification run with `storage_fio_binary=/bin/false` retained
+  the original non-zero failure, executed the `always` cleanup, and left no
+  `.storage-qualification-*` files
+- both final two-node reconciliation runs reported `changed=0`, `failed=0`
+- all four storage playbooks passed syntax checking, `ansible-inventory --graph`
+  passed, `mkdocs build --strict` passed and `git diff --check` passed
+- `ansible-lint` remained unavailable in the local environment
 
 ## Design Decisions
 

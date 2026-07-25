@@ -8,11 +8,13 @@ storage_mode: reconcile
 storage_destroy_confirmation: ""
 storage_target_disk_id: ""
 
-# Per-host USB bridges that must use usb-storage rather than UAS. Values use
-# the kernel's vendor:product:flags syntax and are combined into one parameter.
+# Kernel command-line ownership is opt-in. When enabled for a host, the declared
+# lists are the complete values managed by this role. Rebooting is separately
+# opt-in so ordinary storage reconciliation cannot restart a node.
+storage_manage_usb_quirks: false
 storage_usb_storage_quirks: []
 storage_usb_core_quirks: []
-storage_reboot_after_usb_quirk_change: true
+storage_reboot_after_usb_quirk_change: false
 
 storage_diagnostic_packages:
   - e2fsprogs
@@ -24,3 +26,4 @@ storage_diagnostic_packages:
 
 storage_benchmark_duration_seconds: 30
 storage_stability_duration_seconds: 3600
+storage_fio_binary: fio

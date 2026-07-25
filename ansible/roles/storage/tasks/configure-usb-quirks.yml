@@ -78,24 +78,42 @@
     - storage_usb_core_quirks | length == 0
     - "'usbcore.quirks=' in (storage_kernel_cmdline.content | b64decode)"
 
+- name: Record whether managed USB quirk configuration changed
+  ansible.builtin.set_fact:
+    storage_usb_quirk_configuration_changed: >-
+      {{
+        storage_usb_quirk_updated.changed | default(false) or
+        storage_usb_quirk_added.changed | default(false) or
+        storage_usb_quirk_removed.changed | default(false) or
+        storage_usb_core_quirk_updated.changed | default(false) or
+        storage_usb_core_quirk_added.changed | default(false) or
+        storage_usb_core_quirk_removed.changed | default(false)
+      }}
+
 - name: Reboot after USB-storage driver compatibility change
   ansible.builtin.reboot:
     reboot_timeout: 300
   when:
     - storage_reboot_after_usb_quirk_change | bool
-    - >-
-      storage_usb_quirk_updated.changed | default(false) or
-      storage_usb_quirk_added.changed | default(false) or
-      storage_usb_quirk_removed.changed | default(false) or
-      storage_usb_core_quirk_updated.changed | default(false) or
-      storage_usb_core_quirk_added.changed | default(false) or
-      storage_usb_core_quirk_removed.changed | default(false)
+    - storage_usb_quirk_configuration_changed | bool
+
+- name: Report pending reboot for managed USB quirk change
+  ansible.builtin.debug:
+    msg: >-
+      Managed USB quirk configuration changed. Reboot {{ inventory_hostname }}
+      before relying on the new kernel command line.
+  when:
+    - storage_usb_quirk_configuration_changed | bool
+    - not storage_reboot_after_usb_quirk_change | bool
 
 - name: Read active kernel command line after USB quirk reconciliation
   ansible.builtin.command:
     cmd: "cat /proc/cmdline"
   register: storage_active_kernel_cmdline
   changed_when: false
+  when: >-
+    not storage_usb_quirk_configuration_changed | bool or
+    storage_reboot_after_usb_quirk_change | bool
 
 - name: Assert declared USB-storage quirk is active
   ansible.builtin.assert:
@@ -104,7 +122,11 @@
         ('usb-storage.quirks=' ~ (storage_usb_storage_quirks | join(',')))
         in storage_active_kernel_cmdline.stdout
     fail_msg: "The declared USB-storage compatibility quirk is not active."
-  when: storage_usb_storage_quirks | length > 0
+  when:
+    - >-
+      not storage_usb_quirk_configuration_changed | bool or
+      storage_reboot_after_usb_quirk_change | bool
+    - storage_usb_storage_quirks | length > 0
 
 - name: Assert declared USB core quirk is active
   ansible.builtin.assert:
@@ -113,7 +135,11 @@
         ('usbcore.quirks=' ~ (storage_usb_core_quirks | join(',')))
         in storage_active_kernel_cmdline.stdout
     fail_msg: "The declared USB core compatibility quirk is not active."
-  when: storage_usb_core_quirks | length > 0
+  when:
+    - >-
+      not storage_usb_quirk_configuration_changed | bool or
+      storage_reboot_after_usb_quirk_change | bool
+    - storage_usb_core_quirks | length > 0
 
 - name: Assert undeclared USB-storage quirk is inactive
   ansible.builtin.assert:
@@ -122,7 +148,11 @@
     fail_msg: >-
       An undeclared usb-storage quirk remains active. Reboot the node to apply
       /boot/firmware/cmdline.txt before continuing.
-  when: storage_usb_storage_quirks | length == 0
+  when:
+    - >-
+      not storage_usb_quirk_configuration_changed | bool or
+      storage_reboot_after_usb_quirk_change | bool
+    - storage_usb_storage_quirks | length == 0
 
 - name: Assert undeclared USB core quirk is inactive
   ansible.builtin.assert:
@@ -131,4 +161,8 @@
     fail_msg: >-
       An undeclared usbcore quirk remains active. Reboot the node to apply
       /boot/firmware/cmdline.txt before continuing.
-  when: storage_usb_core_quirks | length == 0
+  when:
+    - >-
+      not storage_usb_quirk_configuration_changed | bool or
+      storage_reboot_after_usb_quirk_change | bool
+    - storage_usb_core_quirks | length == 0

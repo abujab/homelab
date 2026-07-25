@@ -61,61 +61,64 @@
   register: storage_qualification_kernel_before
   changed_when: false
 
-- name: Run file-based performance baselines
-  ansible.builtin.command:
-    argv:
-      - fio
-      - "--name={{ item.name }}"
-      - "--filename={{ storage_disk.mount.path }}/.storage-qualification-{{ item.name }}"
-      - "--rw={{ item.rw }}"
-      - "--bs={{ item.bs }}"
-      - --size=1G
-      - "--runtime={{ storage_benchmark_duration_seconds }}"
-      - --time_based
-      - --direct=1
-      - --ioengine=libaio
-      - --iodepth=16
-      - --group_reporting
-      - --output-format=normal
-  loop:
-    - {name: sequential-write, rw: write, bs: 1M}
-    - {name: sequential-read, rw: read, bs: 1M}
-    - {name: random-write, rw: randwrite, bs: 4k}
-    - {name: random-read, rw: randread, bs: 4k}
-  register: storage_qualification_benchmarks
-  changed_when: false
+- name: Run file-based qualification with guaranteed cleanup
+  block:
+    - name: Run file-based performance baselines
+      ansible.builtin.command:
+        argv:
+          - "{{ storage_fio_binary }}"
+          - "--name={{ item.name }}"
+          - "--filename={{ storage_disk.mount.path }}/.storage-qualification-{{ item.name }}"
+          - "--rw={{ item.rw }}"
+          - "--bs={{ item.bs }}"
+          - --size=1G
+          - "--runtime={{ storage_benchmark_duration_seconds }}"
+          - --time_based
+          - --direct=1
+          - --ioengine=libaio
+          - --iodepth=16
+          - --group_reporting
+          - --output-format=normal
+      loop:
+        - {name: sequential-write, rw: write, bs: 1M}
+        - {name: sequential-read, rw: read, bs: 1M}
+        - {name: random-write, rw: randwrite, bs: 4k}
+        - {name: random-read, rw: randread, bs: 4k}
+      register: storage_qualification_benchmarks
+      changed_when: false
 
-- name: Run sustained mixed-I/O stability test
-  ansible.builtin.command:
-    argv:
-      - fio
-      - --name=storage-stability
-      - "--filename={{ storage_disk.mount.path }}/.storage-qualification-stability"
-      - --rw=randrw
-      - --rwmixread=70
-      - --bs=4k
-      - --size=2G
-      - "--runtime={{ storage_stability_duration_seconds }}"
-      - --time_based
-      - --direct=1
-      - --ioengine=libaio
-      - --iodepth=16
-      - --group_reporting
-      - --output-format=normal
-  register: storage_qualification_stability
-  changed_when: false
+    - name: Run sustained mixed-I/O stability test
+      ansible.builtin.command:
+        argv:
+          - "{{ storage_fio_binary }}"
+          - --name=storage-stability
+          - "--filename={{ storage_disk.mount.path }}/.storage-qualification-stability"
+          - --rw=randrw
+          - --rwmixread=70
+          - --bs=4k
+          - --size=2G
+          - "--runtime={{ storage_stability_duration_seconds }}"
+          - --time_based
+          - --direct=1
+          - --ioengine=libaio
+          - --iodepth=16
+          - --group_reporting
+          - --output-format=normal
+      register: storage_qualification_stability
+      changed_when: false
 
-- name: Remove qualification files
-  ansible.builtin.file:
-    path: "{{ storage_disk.mount.path }}/{{ item }}"
-    state: absent
-  loop:
-    - .storage-qualification-sequential-write
-    - .storage-qualification-sequential-read
-    - .storage-qualification-random-write
-    - .storage-qualification-random-read
-    - .storage-qualification-stability
-  changed_when: false
+  always:
+    - name: Remove qualification files
+      ansible.builtin.file:
+        path: "{{ storage_disk.mount.path }}/{{ item }}"
+        state: absent
+      loop:
+        - .storage-qualification-sequential-write
+        - .storage-qualification-sequential-read
+        - .storage-qualification-random-write
+        - .storage-qualification-random-read
+        - .storage-qualification-stability
+      changed_when: false
 
 - name: Capture SMART state after qualification
   ansible.builtin.command:

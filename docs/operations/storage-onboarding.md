@@ -23,6 +23,10 @@ Discovery and normal reconciliation are non-destructive. Initialization is a
 separate operation requiring an exact runtime token that must never be stored
 in Git.
 
+Normal reconciliation validates disk identity through persistent path, model,
+serial, WWN and exact size without requiring SMART passthrough. SMART access is
+mandatory during the separate qualification operation.
+
 ## Architecture / Implementation
 
 ### Lifecycle
@@ -165,6 +169,23 @@ storage_disks:
 Every disk ID and mount path must be unique per host. Filesystem labels must be
 unique across the managed environment.
 
+USB kernel command-line quirks are outside storage-role ownership by default.
+Only a host that deliberately sets the following opts into reconciliation:
+
+```yaml
+storage_manage_usb_quirks: true
+storage_usb_storage_quirks:
+  - 0bda:9201:u
+storage_usb_core_quirks: []
+storage_reboot_after_usb_quirk_change: false
+```
+
+With management enabled, each list is the complete desired value and an empty
+list removes that parameter. A changed command line is reported as awaiting a
+reboot unless automatic rebooting is also explicitly enabled. When
+`storage_manage_usb_quirks` is false, the role does not read, modify, remove or
+validate existing quirk parameters and cannot reboot because of them.
+
 For another disk on the same host, append a second complete list item rather
 than replacing the first. Use `sequence: 2`, `id: data-disk-02`, label
 `pi4mB02-data02`, a distinct mount such as `/srv/data02`, and that disk's own
@@ -213,7 +234,8 @@ ansible-playbook playbooks/storage-qualify.yml \
 Qualification records USB topology, negotiated speed and driver; SMART health;
 30-second sequential and random file workloads; approximately one hour of
 mixed file I/O; post-test SMART state; and new critical kernel storage events.
-All fio files are removed afterward.
+All fio files are removed through an `always` cleanup path whether a workload
+succeeds or fails.
 
 Do not qualify a disk with reallocated, pending or offline-uncorrectable sectors,
 a failing self-test, USB resets, disconnects, block-I/O errors, filesystem

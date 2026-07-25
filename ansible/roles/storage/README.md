@@ -24,7 +24,14 @@ inventory.
 `storage_disks` is a list, so a host may declare multiple disks. The role
 resolves each persistent path, validates model, serial, WWN and exact capacity,
 rejects root, boot, swap and unexpected mounted storage, and maintains one
-UUID-based fstab entry per mount.
+exact UUID-based fstab entry per mount. Filesystem type, label and UUID are
+compared as exact values. SMART passthrough is required during qualification,
+not during ordinary reconciliation.
+
+USB kernel quirk ownership is disabled by default. A host must explicitly set
+`storage_manage_usb_quirks: true` before the role reads or reconciles quirk
+parameters. Automatic rebooting is a separate opt-in through
+`storage_reboot_after_usb_quirk_change: true`.
 
 ## Design Decisions
 
@@ -35,7 +42,9 @@ recreated.
 ## Best Practices
 
 Run discovery first, use verified inventory values, keep erase tokens ephemeral,
-and add hosts to `storage_nodes` only after qualification passes.
+select exactly one disk for qualification, and add hosts to `storage_nodes` only
+after qualification passes. Qualification files are removed through an Ansible
+`always` cleanup path even when fio fails.
 
 ## Future Improvements
 

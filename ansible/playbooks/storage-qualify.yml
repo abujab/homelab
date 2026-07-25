@@ -12,8 +12,14 @@
       ansible.builtin.assert:
         that:
           - ansible_play_hosts_all | length == 1
-          - storage_disks | default([]) | length > 0
-        fail_msg: "Storage qualification requires one explicitly limited host."
+          - storage_target_disk_id | default('') | length > 0
+          - >-
+            storage_disks | default([]) |
+            selectattr('id', 'equalto', storage_target_disk_id) |
+            list | length == 1
+        fail_msg: >-
+          Storage qualification requires one explicitly limited host and one
+          declared disk selected by storage_target_disk_id.
       run_once: true
 
   roles:

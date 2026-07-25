@@ -5,6 +5,8 @@
       - storage_mode in ['reconcile', 'onboard', 'qualify']
       - storage_disks is sequence
       - storage_disks is not string
+      - storage_manage_usb_quirks is boolean
+      - storage_reboot_after_usb_quirk_change is boolean
     fail_msg: "Invalid storage role mode or storage_disks schema."
 
 - name: Assert every storage disk has a complete schema
@@ -102,7 +104,7 @@
       - >-
         storage_target_disk_id | length == 0 or
         storage_disks | selectattr('id', 'equalto', storage_target_disk_id) | list | length == 1
-      - storage_mode != 'onboard' or storage_target_disk_id | length > 0
+      - storage_mode not in ['onboard', 'qualify'] or storage_target_disk_id | length > 0
     fail_msg: >-
       storage_target_disk_id must select exactly one declared disk and is
-      mandatory for destructive onboarding.
+      mandatory for destructive onboarding and qualification.
