@@ -8,14 +8,6 @@ storage_mode: reconcile
 storage_destroy_confirmation: ""
 storage_target_disk_id: ""
 
-# Kernel command-line ownership is opt-in. When enabled for a host, the declared
-# lists are the complete values managed by this role. Rebooting is separately
-# opt-in so ordinary storage reconciliation cannot restart a node.
-storage_manage_usb_quirks: false
-storage_usb_storage_quirks: []
-storage_usb_core_quirks: []
-storage_reboot_after_usb_quirk_change: false
-
 storage_diagnostic_packages:
   - e2fsprogs
   - fio

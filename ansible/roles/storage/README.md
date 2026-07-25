@@ -28,10 +28,9 @@ exact UUID-based fstab entry per mount. Filesystem type, label and UUID are
 compared as exact values. SMART passthrough is required during qualification,
 not during ordinary reconciliation.
 
-USB kernel quirk ownership is disabled by default. A host must explicitly set
-`storage_manage_usb_quirks: true` before the role reads or reconciles quirk
-parameters. Automatic rebooting is a separate opt-in through
-`storage_reboot_after_usb_quirk_change: true`.
+The role does not manage USB kernel command-line quirks or reboot nodes. The
+obsolete bridge workaround was removed after the powered enclosure qualified
+without it.
 
 ## Design Decisions
 

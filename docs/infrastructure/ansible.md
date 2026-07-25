@@ -216,7 +216,6 @@ The `storage` role currently manages:
 - exact filesystem metadata checks, UUID-based persistent mounts and exact
   fstab/mount verification
 - SMART, USB topology, file-based benchmark, stability and kernel-log checks
-- explicitly opt-in, inventory-declared Raspberry Pi USB quirk reconciliation
 
 Operational behavior is selected by `storage_mode`. Discovery and normal
 reconciliation cannot partition or format a disk. Initialization additionally
@@ -227,14 +226,12 @@ destructive authorization in desired state. The
 role detects an already prepared disk and skips all destructive tasks, making
 onboarding repeatable without recreating its filesystem or UUID.
 
-The role does not inspect or modify kernel USB quirks unless a host explicitly
-sets `storage_manage_usb_quirks: true`. When enabled, the declared quirk lists
-are the complete role-owned values; empty lists remove those parameters.
-Rebooting after a managed change is separately disabled by default and requires
-`storage_reboot_after_usb_quirk_change: true`. Ordinary reconciliation therefore
-does not assume ownership of kernel command-line settings or reboot a node.
-SMART passthrough remains mandatory for qualification but is not required to
-mount an already-qualified filesystem.
+The role does not manage kernel USB quirks or reboot nodes. The obsolete quirk
+workaround was removed after both current enclosures operated without it. A
+future bridge that requires a kernel workaround must be evaluated explicitly
+rather than extending normal storage reconciliation. SMART passthrough remains
+mandatory for qualification but is not required to mount an already-qualified
+filesystem.
 
 The existing `pi4mB01` filesystem is represented by the same inventory model
 with its legacy `pi-cl-storage` label preserved. The role remains independent

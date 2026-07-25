@@ -37,7 +37,7 @@ was never initialized or reformatted.
 | Kernel logs | Pass — no matched USB, UAS, block, ext4, read-only or undervoltage error |
 | Reboot persistence | Pass — two boots with powered enclosure; same UUID mounted read/write |
 | Idempotency | Pass — both final two-node runs reported `changed=0`, `failed=0` |
-| Review safety remediation | Pass — opt-in quirks/reboots, exact metadata/fstab checks, targeted qualification and failure cleanup verified |
+| Review safety remediation | Pass — obsolete quirk handling removed; exact metadata/fstab checks, targeted qualification and failure cleanup verified |
 
 The evidence files in this directory contain concise, sanitized values. The
 erase token is intentionally omitted from stored host state and inventory.
@@ -52,12 +52,15 @@ requalification before storage use expands.
 
 The requested safety corrections were validated on 2026-07-26:
 
-- all USB quirk tasks were skipped on both storage nodes with the default
-  `storage_manage_usb_quirks: false`
+- USB quirk variables, task imports and reconciliation logic were removed from
+  the storage role; no host declares a quirk
+- a final check of `/boot/firmware/cmdline.txt` and `/proc/cmdline` returned no
+  `usb-storage.quirks` or `usbcore.quirks` entry on either storage node
 - `/boot/firmware/cmdline.txt` SHA-256 values were unchanged across two normal
   reconciliation runs: `d9be6a3b...12af60a` on pi4mB01 and
   `38d5ab57...151ca2` on pi4mB02
-- boot IDs were unchanged across those runs, proving neither node rebooted
+- boot IDs were unchanged across those runs, and the role contains no reboot
+  task, proving normal storage reconciliation cannot restart either node
 - filesystem type, label and UUID were read separately and compared exactly
 - each active mount UUID matched the prepared filesystem UUID and its expected
   physical disk

@@ -186,7 +186,7 @@ Completed:
 - externally powered Sabrent/JMicron USB 3 enclosure qualified with UAS at 5000M
 - one-hour mixed-I/O, SMART, kernel-log and two-reboot validation completed
 - accepted pi4mB02 UDMA CRC baseline of one remained stable through a second reboot and follow-up I/O
-- USB quirk ownership and reboot behavior made explicitly opt-in; exact filesystem, UUID, fstab and active-mount contracts enforced
+- obsolete USB quirk management removed from both node configuration and the storage role; exact filesystem, UUID, fstab and active-mount contracts enforced
 - qualification requires one selected disk and guarantees temporary fio cleanup on failure
 - final two-node normal reconciliation passed twice with `changed=0` and `failed=0`
 - reusable storage onboarding runbook, naming convention and WO-0010 evidence added

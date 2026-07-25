@@ -5,8 +5,6 @@
       - storage_mode in ['reconcile', 'onboard', 'qualify']
       - storage_disks is sequence
       - storage_disks is not string
-      - storage_manage_usb_quirks is boolean
-      - storage_reboot_after_usb_quirk_change is boolean
     fail_msg: "Invalid storage role mode or storage_disks schema."
 
 - name: Assert every storage disk has a complete schema
