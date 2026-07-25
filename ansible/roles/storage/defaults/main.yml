@@ -1,12 +1,26 @@
 ---
-storage_filesystem_label: pi-cl-storage
-storage_filesystem_type: ext4
-storage_mount_path: /srv/longhorn
-storage_mount_options: defaults,nofail
-storage_expected_model: ""
-storage_expected_serial: ""
+# Inventory owns disk identity and desired filesystem state. An empty list keeps
+# the role safe on hosts that have no declared storage.
+storage_disks: []
+
+# Operational mode is selected only by the dedicated playbook entry points.
+storage_mode: reconcile
+storage_destroy_confirmation: ""
+storage_target_disk_id: ""
+
+# Per-host USB bridges that must use usb-storage rather than UAS. Values use
+# the kernel's vendor:product:flags syntax and are combined into one parameter.
+storage_usb_storage_quirks: []
+storage_usb_core_quirks: []
+storage_reboot_after_usb_quirk_change: true
 
 storage_diagnostic_packages:
+  - e2fsprogs
   - fio
   - hdparm
+  - parted
   - smartmontools
+  - usbutils
+
+storage_benchmark_duration_seconds: 30
+storage_stability_duration_seconds: 3600

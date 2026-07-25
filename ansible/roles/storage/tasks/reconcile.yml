@@ -1,0 +1,94 @@
+---
+- name: Inspect prepared state for {{ storage_disk.id }}
+  ansible.builtin.include_tasks: inspect-state.yml
+
+- name: Assert declared partition and filesystem state
+  ansible.builtin.assert:
+    that:
+      - storage_is_prepared
+      - storage_partition_table.stdout is search(':gpt:')
+      - storage_partition_count.stdout | int == 1
+      - storage_partition_device | length > 0
+      - ('TYPE=' ~ storage_disk.filesystem.type) in storage_existing_filesystem.stdout
+      - ('LABEL=' ~ storage_disk.filesystem.label) in storage_existing_filesystem.stdout
+      - storage_existing_filesystem.stdout is search('UUID=.+')
+    fail_msg: >-
+      {{ storage_disk.id }} differs from inventory. Normal reconciliation is
+      non-destructive and will not repair it by formatting.
+
+- name: Read filesystem UUID
+  ansible.builtin.command:
+    cmd: "blkid -s UUID -o value {{ storage_partition_device }}"
+  register: storage_filesystem_uuid_command
+  changed_when: false
+
+- name: Record filesystem UUID
+  ansible.builtin.set_fact:
+    storage_filesystem_uuid: "{{ storage_filesystem_uuid_command.stdout | trim }}"
+
+- name: Create storage mount point
+  ansible.builtin.file:
+    path: "{{ storage_disk.mount.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Persist and mount storage by filesystem UUID
+  ansible.posix.mount:
+    path: "{{ storage_disk.mount.path }}"
+    src: "UUID={{ storage_filesystem_uuid }}"
+    fstype: "{{ storage_disk.filesystem.type }}"
+    opts: "{{ storage_disk.mount.options }}"
+    dump: "0"
+    passno: "2"
+    state: mounted
+
+- name: Verify active mount
+  ansible.builtin.command:
+    cmd: "findmnt -n -o SOURCE,FSTYPE,TARGET --target {{ storage_disk.mount.path }}"
+  register: storage_mount_verification
+  changed_when: false
+
+- name: Resolve active mount source parent disk
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      storage_source=$(findmnt -n -o SOURCE --target {{ storage_disk.mount.path | quote }})
+      lsblk -sno PATH,TYPE "$storage_source" | awk '$2 == "disk" { print $1 }'
+    executable: /bin/bash
+  register: storage_mount_parent
+  changed_when: false
+
+- name: Count persistent mount entries
+  ansible.builtin.shell:
+    cmd: |
+      awk -v target={{ storage_disk.mount.path | quote }} \
+        '$2 == target { count++ } END { print count + 0 }' /etc/fstab
+    executable: /bin/bash
+  register: storage_fstab_entry_count
+  changed_when: false
+
+- name: Verify mount is writable without retaining test data
+  ansible.builtin.shell:
+    cmd: |
+      set -o errexit -o nounset
+      storage_test_file=$(mktemp {{ storage_disk.mount.path | quote }}/.storage-verify.XXXXXX)
+      trap 'rm -f "$storage_test_file"' EXIT
+      test -w "$storage_test_file"
+    executable: /bin/bash
+  changed_when: false
+
+- name: Assert final mount contract
+  ansible.builtin.assert:
+    that:
+      - ('UUID=' ~ storage_filesystem_uuid) in storage_mount_verification.stdout
+        or storage_partition_device in storage_mount_verification.stdout
+      - storage_disk.filesystem.type in storage_mount_verification.stdout
+      - storage_disk.mount.path in storage_mount_verification.stdout
+      - storage_resolved_device in storage_mount_parent.stdout_lines
+      - storage_fstab_entry_count.stdout | int == 1
+    fail_msg: >-
+      Mount verification failed for {{ storage_disk.id }}:
+      {{ storage_mount_verification.stdout }}; parent={{ storage_mount_parent.stdout_lines }};
+      fstab entries={{ storage_fstab_entry_count.stdout }}.

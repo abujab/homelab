@@ -1,0 +1,134 @@
+---
+- name: Validate USB-storage quirk syntax
+  ansible.builtin.assert:
+    that:
+      - item is match('^[0-9a-fA-F]{4}:[0-9a-fA-F]{4}:[a-z]+$')
+    fail_msg: "Invalid usb-storage quirk syntax: {{ item }}"
+  loop: "{{ storage_usb_storage_quirks }}"
+
+- name: Validate USB core quirk syntax
+  ansible.builtin.assert:
+    that:
+      - item is match('^[0-9a-fA-F]{4}:[0-9a-fA-F]{4}:[a-z]+$')
+    fail_msg: "Invalid usbcore quirk syntax: {{ item }}"
+  loop: "{{ storage_usb_core_quirks }}"
+
+- name: Read Raspberry Pi kernel command line
+  ansible.builtin.slurp:
+    path: /boot/firmware/cmdline.txt
+  register: storage_kernel_cmdline
+
+- name: Update existing USB-storage quirk parameter
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '(\susb-storage\.quirks=)\S+'
+    replace: '\g<1>{{ storage_usb_storage_quirks | join(",") }}'
+  register: storage_usb_quirk_updated
+  when:
+    - storage_usb_storage_quirks | length > 0
+    - "'usb-storage.quirks=' in (storage_kernel_cmdline.content | b64decode)"
+
+- name: Add USB-storage quirk parameter
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '^(?!.*\busb-storage\.quirks=)(.*)$'
+    replace: '\1 usb-storage.quirks={{ storage_usb_storage_quirks | join(",") }}'
+  register: storage_usb_quirk_added
+  when:
+    - storage_usb_storage_quirks | length > 0
+    - "'usb-storage.quirks=' not in (storage_kernel_cmdline.content | b64decode)"
+
+- name: Remove undeclared USB-storage quirk parameter
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '\s+usb-storage\.quirks=\S+'
+    replace: ''
+  register: storage_usb_quirk_removed
+  when:
+    - storage_usb_storage_quirks | length == 0
+    - "'usb-storage.quirks=' in (storage_kernel_cmdline.content | b64decode)"
+
+- name: Update existing USB core quirk parameter
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '(\susbcore\.quirks=)\S+'
+    replace: '\g<1>{{ storage_usb_core_quirks | join(",") }}'
+  register: storage_usb_core_quirk_updated
+  when:
+    - storage_usb_core_quirks | length > 0
+    - "'usbcore.quirks=' in (storage_kernel_cmdline.content | b64decode)"
+
+- name: Add USB core quirk parameter
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '^(?!.*\busbcore\.quirks=)(.*)$'
+    replace: '\1 usbcore.quirks={{ storage_usb_core_quirks | join(",") }}'
+  register: storage_usb_core_quirk_added
+  when:
+    - storage_usb_core_quirks | length > 0
+    - "'usbcore.quirks=' not in (storage_kernel_cmdline.content | b64decode)"
+
+- name: Remove undeclared USB core quirk parameter
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '\s+usbcore\.quirks=\S+'
+    replace: ''
+  register: storage_usb_core_quirk_removed
+  when:
+    - storage_usb_core_quirks | length == 0
+    - "'usbcore.quirks=' in (storage_kernel_cmdline.content | b64decode)"
+
+- name: Reboot after USB-storage driver compatibility change
+  ansible.builtin.reboot:
+    reboot_timeout: 300
+  when:
+    - storage_reboot_after_usb_quirk_change | bool
+    - >-
+      storage_usb_quirk_updated.changed | default(false) or
+      storage_usb_quirk_added.changed | default(false) or
+      storage_usb_quirk_removed.changed | default(false) or
+      storage_usb_core_quirk_updated.changed | default(false) or
+      storage_usb_core_quirk_added.changed | default(false) or
+      storage_usb_core_quirk_removed.changed | default(false)
+
+- name: Read active kernel command line after USB quirk reconciliation
+  ansible.builtin.command:
+    cmd: "cat /proc/cmdline"
+  register: storage_active_kernel_cmdline
+  changed_when: false
+
+- name: Assert declared USB-storage quirk is active
+  ansible.builtin.assert:
+    that:
+      - >-
+        ('usb-storage.quirks=' ~ (storage_usb_storage_quirks | join(',')))
+        in storage_active_kernel_cmdline.stdout
+    fail_msg: "The declared USB-storage compatibility quirk is not active."
+  when: storage_usb_storage_quirks | length > 0
+
+- name: Assert declared USB core quirk is active
+  ansible.builtin.assert:
+    that:
+      - >-
+        ('usbcore.quirks=' ~ (storage_usb_core_quirks | join(',')))
+        in storage_active_kernel_cmdline.stdout
+    fail_msg: "The declared USB core compatibility quirk is not active."
+  when: storage_usb_core_quirks | length > 0
+
+- name: Assert undeclared USB-storage quirk is inactive
+  ansible.builtin.assert:
+    that:
+      - "'usb-storage.quirks=' not in storage_active_kernel_cmdline.stdout"
+    fail_msg: >-
+      An undeclared usb-storage quirk remains active. Reboot the node to apply
+      /boot/firmware/cmdline.txt before continuing.
+  when: storage_usb_storage_quirks | length == 0
+
+- name: Assert undeclared USB core quirk is inactive
+  ansible.builtin.assert:
+    that:
+      - "'usbcore.quirks=' not in storage_active_kernel_cmdline.stdout"
+    fail_msg: >-
+      An undeclared usbcore quirk remains active. Reboot the node to apply
+      /boot/firmware/cmdline.txt before continuing.
+  when: storage_usb_core_quirks | length == 0

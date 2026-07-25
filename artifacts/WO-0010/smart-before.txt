@@ -1,0 +1,18 @@
+pi4mB02 replacement disk before qualification:
+
+Device Model: WDC WD3200BEVT-22ZCT0
+Serial Number: WD-WXE508N88014
+WWN: 0x50014ee2ac2a2b36
+User Capacity: 320072933376 bytes [320 GB]
+SMART overall-health self-assessment: PASSED
+Power-on hours: 5131
+Reallocated sectors: 0
+Current pending sectors: 0
+Offline uncorrectable sectors: 0
+UDMA CRC errors: 0
+Self-test history: short self-test completed without error
+Reported disk errors: none requiring rejection
+
+The Sabrent/JMicron bridge returns smartctl status bit 0x04 for unsupported
+optional ATA/SCT output while still exposing the required identity, health,
+attributes, error log and self-test history.

@@ -17,7 +17,7 @@ NAS, Turing Pi or RK1 hardware as current infrastructure.
 
 Node membership and addresses are verified against the Ansible inventory.
 Storage identity and qualification state are verified against the storage role,
-WO-0009 and its evidence. Hardware details that are not recorded in the
+WO-0009, WO-0010 and their evidence. Hardware details that are not recorded in the
 repository are explicitly marked Pending verification.
 
 ## Architecture / Implementation
@@ -33,7 +33,7 @@ repository are explicitly marked Pending verification.
 | Host | IP Address | Hardware / Architecture | Network | Kubernetes Role | Dedicated Storage | Operational Status |
 |------|------------|-------------------------|---------|-----------------|-------------------|--------------------|
 | `pi4mB01` | `192.168.68.101` | Raspberry Pi 4 Model B / ARM64 | `eth0`; Wi-Fi disabled | Single K3s control plane | Qualified 160 GB disk mounted at `/srv/longhorn` | Ready |
-| `pi4mB02` | `192.168.68.102` | Raspberry Pi 4 Model B / ARM64 | `eth0`; Wi-Fi disabled | K3s worker | WD1600BEVT known but not connected or qualified | Ready |
+| `pi4mB02` | `192.168.68.102` | Raspberry Pi 4 Model B / ARM64 | `eth0`; Wi-Fi disabled | K3s worker | Qualified 320 GB disk mounted at `/srv/longhorn` | Ready |
 | `pi4mB03` | `192.168.68.103` | Raspberry Pi 4 Model B / ARM64 | `eth0`; Wi-Fi disabled | K3s worker | No qualified dedicated storage | Ready |
 | `pi4mB04` | `192.168.68.104` | Raspberry Pi 4 Model B / ARM64 | `eth0`; Wi-Fi disabled | K3s worker | No qualified dedicated storage | Ready |
 
@@ -56,7 +56,7 @@ addresses are DHCP reservations represented by `ansible_host` values under
 | Node | Disk / Capacity | Enclosure or Bridge | Filesystem | Mount | Qualification | Known Limitation |
 |------|-----------------|---------------------|------------|-------|---------------|------------------|
 | `pi4mB01` | Hitachi HTS545016B9SA02; 160 GB / 149 GiB | NexStar CX enclosure; ASMedia ASM1051 USB 3 bridge | ext4; label `pi-cl-storage` | `/srv/longhorn` | Qualified by WO-0009 | `usb-storage`, no UASP; 5400 RPM; both Y-cable connectors required |
-| `pi4mB02` | WD1600BEVT; 160 GB | Not connected | Not prepared | Not mounted | Not qualified | Enclosure and runtime behavior Pending verification |
+| `pi4mB02` | WDC WD3200BEVT-22ZCT0; 320 GB / 298 GiB | Externally powered Sabrent/JMicron; USB `152d:a578` | ext4; label `pi4mB02-data01` | `/srv/longhorn` | Qualified by WO-0010 | UAS at 5000M; 5400 RPM; accepted UDMA CRC baseline 1 requires monitoring |
 | `pi4mB03` | None recorded | Not applicable | Not applicable | Not mounted | No qualified storage | Additional hardware required |
 | `pi4mB04` | None recorded | Not applicable | Not applicable | Not mounted | No qualified storage | Additional hardware required |
 
@@ -69,10 +69,10 @@ Provisioner only and no replicated storage layer.
 - node membership: `ansible/inventories/home/hosts.yml`
 - node addresses: `ansible/inventories/home/host_vars/`
 - network baseline: `ansible/roles/network/`
-- qualified storage identity: `ansible/inventories/home/host_vars/pi4mB01.yml`
+- qualified storage identity: `ansible/inventories/home/host_vars/`
 - storage mount contract: `ansible/roles/storage/`
 - current operational state: `PROJECT_STATE.md`
-- detailed storage results: `artifacts/WO-0009/`
+- detailed storage results: `artifacts/WO-0009/` and `artifacts/WO-0010/`
 
 ## Design Decisions
 
@@ -92,8 +92,8 @@ Only independently qualified disks may place a node in the Ansible
 
 ## Future Improvements
 
-- qualify the known `pi4mB02` disk after its enclosure is available
-- add at least one additional qualified storage node before Longhorn evaluation
+- monitor the accepted pi4mB02 UDMA CRC baseline and requalify after any increase
+- review and approve the Longhorn architecture before deployment work
 - record management workstation hardware only when verified
 - add future compute or storage hardware only after it exists
 
@@ -105,3 +105,4 @@ Only independently qualified disks may place a node in the Ansible
 - [Storage](../infrastructure/storage.md)
 - [Roadmap](../overview/roadmap.md)
 - [WO-0009 Validation](https://github.com/abujab/homelab/blob/main/artifacts/WO-0009/validation.md)
+- [WO-0010 Validation](https://github.com/abujab/homelab/blob/main/artifacts/WO-0010/validation.md)

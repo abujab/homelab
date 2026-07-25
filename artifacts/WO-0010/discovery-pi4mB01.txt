@@ -1,0 +1,17 @@
+Read-only discovery result, 2026-07-25
+
+Host: pi4mB01
+Root/boot parent: mmcblk0 (Raspberry Pi operating-system disk)
+Dedicated disk persistent path: /dev/disk/by-id/wwn-0x5000cca59be59bf8
+Resolved device: /dev/sda
+Model: Hitachi HTS545016B9SA02
+Serial: 091028PBDB00QCJNRTDP
+WWN: 0x5000cca59be59bf8
+Capacity: 160041885696 bytes
+Partition: /dev/sda1
+Filesystem: ext4, label pi-cl-storage
+Filesystem UUID: 3e0e4776-2047-4962-bdd3-8a2e0e764a96
+Mount: /srv/longhorn
+
+The candidate disk is not the root, boot or swap parent. Discovery performed
+no changes.

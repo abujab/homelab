@@ -1,0 +1,10 @@
+pi4mB02 onboarding result:
+
+- partition table: GPT
+- partitions: one
+- data partition: /dev/sda1
+- filesystem: ext4
+- filesystem label: pi4mB02-data01
+
+The role re-resolved and revalidated the declared whole-disk identity after the
+partition-table change.

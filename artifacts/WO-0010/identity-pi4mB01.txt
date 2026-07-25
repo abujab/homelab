@@ -1,0 +1,9 @@
+Inventory identity:
+
+persistent_path=/dev/disk/by-id/wwn-0x5000cca59be59bf8
+model=Hitachi HTS545016B9SA02
+serial=091028PBDB00QCJNRTDP
+wwn=0x5000cca59be59bf8
+size_bytes=160041885696
+
+The role resolved the path to a whole disk and matched every configured field.

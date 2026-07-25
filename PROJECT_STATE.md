@@ -3,13 +3,13 @@
 **Project:** HomeLab  
 **Owner:** Abdul Jabbar  
 **Status:** Active Development  
-**Last Updated:** 2026-07-21
+**Last Updated:** 2026-07-26
 
 ---
 
 ## Current Platform State
 
-HomeLab has completed its first nine engineering implementation sprints and the
+HomeLab has completed its first ten engineering implementation sprints and the
 first four documentation sprints.
 
 The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, shared Traefik application ingress, trusted HTTPS, automated cert-manager certificate lifecycle, Ansible automation and MkDocs Material documentation.
@@ -169,6 +169,26 @@ Completed:
 - one-hour mixed-I/O stability test completed without fio or kernel storage errors
 - storage qualification evidence and documentation added
 
+### Infrastructure Sprint 10 — Reusable Storage Lifecycle
+
+Status: Complete
+
+Completed:
+
+- existing storage role refactored into inventory-driven multi-disk lifecycle automation
+- separate read-only discovery, guarded onboarding, qualification and normal reconciliation playbooks added
+- exact persistent path, model, serial, WWN and byte-capacity validation implemented
+- root, boot, swap, mounted-filesystem, duplicate-alias and read-only protections implemented
+- runtime host-and-disk erase token required for destructive onboarding
+- pi4mB01 preserved with its existing filesystem label, UUID, data and mount
+- pi4mB02 replacement disk initialized as GPT with one ext4 filesystem labeled `pi4mB02-data01`
+- pi4mB02 mounted by UUID at `/srv/longhorn` and promoted to `storage_nodes`
+- externally powered Sabrent/JMicron USB 3 enclosure qualified with UAS at 5000M
+- one-hour mixed-I/O, SMART, kernel-log and two-reboot validation completed
+- accepted pi4mB02 UDMA CRC baseline of one remained stable through a second reboot and follow-up I/O
+- final two-node normal reconciliation passed twice with `changed=0` and `failed=0`
+- reusable storage onboarding runbook, naming convention and WO-0010 evidence added
+
 ### Documentation Sprint 1 — Overview Foundation
 
 Status: Complete
@@ -300,6 +320,7 @@ Completed sections:
 - Backup
 - PKI
 - Certificates
+- Storage Onboarding
 - Reference
 - Infrastructure Inventory
 - Naming and Addressing
@@ -318,9 +339,10 @@ No blocking technical risks identified.
 
 Known storage limitations:
 
-- pi4mB01 is the only node with qualified dedicated storage; replicated storage is not yet possible.
-- the current ASMedia bridge operates through `usb-storage` rather than UASP.
-- the qualified 5400 RPM disk is appropriate for foundation testing but not high-performance workloads.
+- both independently qualified disks are older 5400 RPM devices appropriate for foundation testing, not high-performance workloads.
+- the pi4mB01 ASMedia bridge operates through `usb-storage` rather than UASP and requires both Y-cable connectors.
+- pi4mB02 has an accepted UDMA CRC baseline of one; any increase requires interface investigation and requalification.
+- `nofail` permits boot without USB storage, so future Longhorn automation must reject an unmounted `/srv/longhorn` fallback directory.
 
 Known PKI risk:
 
@@ -346,8 +368,8 @@ Known documentation limitations:
 
 No successor work order is approved.
 
-The next eligible infrastructure activity is qualification of additional
-storage hardware when the SATA-to-USB enclosure and disk are available.
-Longhorn evaluation remains blocked until at least one additional storage node
-is independently qualified, USB operation is stable, storage architecture is
-approved and a separate work order is reviewed.
+The two-node hardware prerequisite for Longhorn evaluation is complete. The
+next eligible infrastructure activity is review of WO-0011 after ADR-0004 and
+the storage architecture are approved. WO-0011 must prevent Longhorn from using
+an unmounted `/srv/longhorn` fallback directory and must retain SMART and USB
+interface monitoring. Longhorn remains uninstalled.

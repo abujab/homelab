@@ -18,7 +18,7 @@ through approved incremental work.
 | Wired networking, MetalLB and Pi-hole DNS | Complete |
 | Traefik ingress, private PKI and trusted HTTPS | Complete |
 | MkDocs overview, infrastructure, operations and reference documentation | Complete |
-| Storage hardware foundation | Partial: one node qualified |
+| Storage hardware foundation | Complete: two nodes independently qualified |
 | Replicated Kubernetes storage | Not installed |
 | Observability, GitOps, secrets management and AI platform | Planned |
 
@@ -68,6 +68,7 @@ and [Service Catalog](docs/reference/service-catalog.md) for current details.
 
 ## Next Eligible Work
 
-Storage expansion and Longhorn evaluation remain conditional on at least one
-additional qualified storage node, stable USB operation, approved storage
-architecture and a separately reviewed work order.
+The two-node hardware prerequisite for Longhorn evaluation is complete.
+Longhorn remains uninstalled and requires an approved storage architecture,
+the `/srv/longhorn` mounted-path safety guard and a separately reviewed work
+order.

@@ -1,0 +1,16 @@
+Repository validation summary
+
+Final run: 2026-07-26
+
+- storage-discover.yml --syntax-check: pass
+- storage-onboard.yml --syntax-check: pass
+- storage.yml --syntax-check: pass
+- storage-qualify.yml --syntax-check: pass
+- ansible-inventory --graph: pass
+- MkDocs strict build: pass
+- git diff --check: pass
+- ansible-lint: unavailable on the management workstation
+
+Runtime validation also passed for final read-only discovery on both nodes,
+prepared-disk onboarding with every destructive task skipped, the final-code
+qualification follow-up, and two normal reconciliation runs with `changed=0`.

@@ -80,6 +80,7 @@ nav:
       - Updating: operations/updating.md
       - Ingress: operations/ingress.md
       - Certificates: operations/certificates.md
+      - Storage Onboarding: operations/storage-onboarding.md
       - Rebuilding: operations/rebuilding.md
       - Troubleshooting: operations/troubleshooting.md
       - Backup: operations/backup.md

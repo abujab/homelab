@@ -36,7 +36,7 @@ Current platform capabilities include:
 - Traefik shared ingress at `192.168.68.201`
 - a private two-tier PKI and cert-manager certificate automation
 - trusted HTTPS for `test.home.arpa` and `pihole.home.arpa`
-- one qualified dedicated disk on `pi4mB01`
+- two independently qualified dedicated disks on `pi4mB01` and `pi4mB02`
 
 ## Architecture / Implementation
 

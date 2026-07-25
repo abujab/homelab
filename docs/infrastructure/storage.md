@@ -35,9 +35,12 @@ Current storage model:
 Raspberry Pi node
 |
 +-- microSD card
-    +-- operating system
-    +-- K3s runtime state
-    +-- local-path-provisioner volumes when used
+|   +-- operating system
+|   +-- K3s runtime state
+|   +-- local-path-provisioner volumes when used
++-- independently qualified USB disk, where declared
+    +-- ext4 filesystem
+    +-- UUID-based /srv/longhorn mount
 ```
 
 Current Kubernetes storage component:
@@ -59,19 +62,26 @@ storage-specific implementation context.
 | Node | Disk | Capacity | Connection | Filesystem | Mount | Status |
 |------|------|----------|------------|------------|-------|--------|
 | pi4mB01 | Hitachi HTS545016B9SA02, serial `091028PBDB00QCJNRTDP` | 160 GB / 149 GiB | ASMedia ASM1051 USB 3 bridge | ext4, label `pi-cl-storage` | `/srv/longhorn` | Qualified |
-| pi4mB02 | WD1600BEVT | 160 GB | Not connected | Not prepared | Not mounted | Pending |
+| pi4mB02 | WDC WD3200BEVT-22ZCT0, serial `WD-WXE508N88014` | 320 GB / 298 GiB | Externally powered Sabrent/JMicron USB 3 enclosure | ext4, label `pi4mB02-data01` | `/srv/longhorn` | Qualified by WO-0010 |
 | pi4mB03 | None | — | — | — | — | Pending hardware |
 | pi4mB04 | None | — | — | — | — | Pending hardware |
 
-The pi4mB01 filesystem is persisted in `/etc/fstab` by label:
+The qualified filesystem contract uses UUID-based `/etc/fstab` entries:
 
 ```text
-LABEL=pi-cl-storage /srv/longhorn ext4 defaults,nofail 0 2
+pi4mB01: UUID=3e0e4776-2047-4962-bdd3-8a2e0e764a96 /srv/longhorn ext4 defaults,nofail 0 2
+pi4mB02: UUID=ba294833-45e8-40e6-b5f6-ed785c80a7f9 /srv/longhorn ext4 defaults,nofail 0 2
 ```
 
-The Ansible `storage` role verifies the label, filesystem type, disk model and serial before mounting. It deliberately contains no partitioning or formatting operations.
+The Ansible `storage` role validates the persistent whole-disk path, exact
+capacity, model, serial and WWN before accepting a filesystem. Normal
+reconciliation is non-destructive. A separate onboarding mode can create GPT,
+one ext4 partition and the declared label only when an operator supplies the
+exact host-and-disk erase token at runtime. Discovery and qualification have
+their own playbook entry points; see
+[Storage Onboarding](../operations/storage-onboarding.md).
 
-### Qualification results
+### pi4mB01 qualification results
 
 SMART reported `PASSED` with zero reallocated sectors, pending sectors, offline-uncorrectable sectors and UDMA CRC errors. The disk had 4,899 power-on hours and measured 29°C during initial qualification.
 
@@ -86,6 +96,29 @@ The file-based baseline measured:
 
 The mount survived a node reboot and temporary-file write validation. Detailed
 results are stored in the [WO-0009 validation evidence](https://github.com/abujab/homelab/blob/main/artifacts/WO-0009/validation.md).
+
+### pi4mB02 qualification results
+
+The first 160 GB WD candidate was rejected without formatting after its pending
+sector count increased from seven to eight and a SMART short self-test failed
+at LBA 25. It was replaced before onboarding.
+
+The replacement disk passed initial SMART health and a short self-test with
+zero reallocated, pending and offline-uncorrectable sectors. Its 30-second fio
+baselines measured 60.1 MB/s sequential write, 59.0 MB/s sequential read, 269
+random-write IOPS and 249 random-read IOPS.
+
+The one-hour direct mixed-I/O test completed with `err=0`, reading 2,400 MiB and
+writing 1,031 MiB. Two controlled reboots preserved UUID
+`ba294833-45e8-40e6-b5f6-ed785c80a7f9`, the automatic read/write mount, USB 3
+at 5000M and the UAS driver. No matched USB, UAS, block, ext4, read-only or
+undervoltage kernel error was found.
+
+The first reboot incremented the UDMA CRC history from zero to one. It remained
+one through a second reboot and a five-minute mixed-I/O follow-up. This stable
+interface event is accepted with monitoring; any increase requires cable,
+bridge and power investigation followed by requalification. Detailed results
+are stored in the [WO-0010 validation evidence](https://github.com/abujab/homelab/blob/main/artifacts/WO-0010/validation.md).
 
 ### Supplemental power validation
 
@@ -118,7 +151,10 @@ microSD cards are convenient for Raspberry Pi boot disks, but they are not a str
 
 ### Identify USB disks independently of device enumeration
 
-Persistent mounts use filesystem labels rather than `/dev/sdX` paths. Automation also validates immutable disk identity fields before accepting the mount.
+Inventory identifies whole disks through persistent `/dev/disk/by-id/` paths
+and exact hardware fields rather than `/dev/sdX`. Persistent mounts use the
+verified filesystem UUID; labels provide human-readable identity and follow
+the project naming convention.
 
 ### Keep hardware qualification independent of Kubernetes
 
@@ -135,13 +171,17 @@ The prepared path is not yet a Longhorn deployment. Kubernetes storage configura
 - review SMART attributes and kernel logs before accepting a disk
 - run benchmarks against a disposable file on the mounted filesystem, not against the raw block device
 - keep both Y-cable connectors attached so the enclosure receives its intended supplemental power
+- use the externally powered enclosure in the exact physical configuration that was qualified
+- verify `/srv/longhorn` is an active mount before any future storage consumer writes to it
 
 Known limitations:
 
 - the ASMedia ASM1051 bridge negotiated USB SuperSpeed at 5 Gbit/s but uses the `usb-storage` driver rather than UASP
 - the enclosure depends on both Y-cable connectors for the qualified power and performance baseline
 - the qualified disk is an older 5400 RPM SATA device and is suitable for foundation testing, not high-performance workloads
-- only one node currently has qualified data storage, so no replicated storage capability exists
+- pi4mB02 has one stable UDMA CRC history event; any increase requires requalification
+- both qualified disks are older rotating media suitable for foundation testing, not high-performance workloads
+- `nofail` permits boot without a USB disk, so `/srv/longhorn` can exist as an unmounted fallback directory; consumers must verify the mount
 
 ## Future Improvements
 
@@ -168,3 +208,6 @@ Before important stateful applications are deployed, HomeLab should have a docum
 - [Backup](../operations/backup.md)
 - [WO-0009 Storage Hardware Foundation](https://github.com/abujab/homelab/blob/main/work-orders/WO-0009-storage-hardware-foundation.md)
 - [WO-0009 Validation Evidence](https://github.com/abujab/homelab/blob/main/artifacts/WO-0009/validation.md)
+- [WO-0010 Reusable Storage Onboarding](https://github.com/abujab/homelab/blob/main/work-orders/WO-0010-reusable-storage-onboarding.md)
+- [WO-0010 Validation Evidence](https://github.com/abujab/homelab/blob/main/artifacts/WO-0010/validation.md)
+- [Storage Onboarding](../operations/storage-onboarding.md)

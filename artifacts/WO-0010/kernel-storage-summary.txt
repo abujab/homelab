@@ -1,0 +1,15 @@
+Kernel storage review:
+
+- one-hour qualification window: no matched critical message
+- five-minute post-reboot follow-up window: no matched critical message
+- final boot journal: no matched critical message
+- USB resets: 0 reported
+- USB disconnects during test windows: 0 reported
+- UAS aborts, timeouts or errors: 0 reported
+- block or buffer I/O errors: 0 reported
+- ext4 errors or warnings: 0 reported
+- read-only remounts: 0 reported
+- undervoltage messages: 0 reported
+
+The review matched USB, UAS, block, ext4, read-only, device-offline,
+undervoltage and timeout patterns. Unrelated full journal content was not stored.

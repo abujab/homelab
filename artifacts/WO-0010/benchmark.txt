@@ -1,0 +1,11 @@
+fio 3.39, direct file-based I/O on /srv/longhorn, 1 GiB file per workload,
+libaio, queue depth 16, 30 seconds per workload:
+
+- sequential write, 1 MiB blocks: 57.3 MiB/s (60.1 MB/s), 1734 MiB, err=0
+- sequential read, 1 MiB blocks: 56.3 MiB/s (59.0 MB/s), 1703 MiB, err=0
+- random write, 4 KiB blocks: 269 IOPS, 1079 KiB/s (1105 kB/s), err=0
+- random read, 4 KiB blocks: 249 IOPS, 999 KiB/s (1023 kB/s), err=0
+
+The follow-up after reboot used the same direct-I/O, file-size, block-size and
+queue-depth settings for five seconds per workload. All four returned err=0.
+Every disposable benchmark file was removed by the playbook.

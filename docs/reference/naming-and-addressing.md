@@ -4,14 +4,13 @@
 
 ## Purpose
 
-This page is the authoritative reference for HomeLab machine naming, LAN
-addresses, MetalLB allocation and internal DNS names.
+This page is the authoritative reference for HomeLab machine naming, storage
+identifiers, LAN addresses, MetalLB allocation and internal DNS names.
 
 ## Scope
 
-It documents the convention and allocations that already exist. It does not
-create a new naming scheme, allocate future service addresses or change router
-configuration.
+It documents approved conventions and allocations. It does not allocate future
+service addresses or change router configuration.
 
 ## Background
 
@@ -44,6 +43,28 @@ lowercase, such as `pi4mb01`; the K3s role explicitly lowercases node names when
 applying worker labels. Case variation does not create a second machine
 identity. Use the inventory spelling in repository configuration and compare
 runtime hostnames case-insensitively.
+
+### Storage naming
+
+Storage names identify hardware-local data filesystems independently of a
+specific storage platform. Do not include implementation names such as
+`longhorn` in disk IDs or filesystem labels.
+
+| Resource | Convention | Example | Uniqueness |
+|----------|------------|---------|------------|
+| Inventory disk sequence | Positive integer | `1` | Unique per host |
+| Inventory disk ID | `data-disk-NN` | `data-disk-01` | Unique per host |
+| ext4 filesystem label | `<canonical-host>-dataNN` | `pi4mB02-data01` | Unique across the managed environment |
+| Persistent mount source | Filesystem UUID | `UUID=<verified-uuid>` | Filesystem identity |
+
+`NN` is a zero-padded two-digit sequence. Filesystem labels preserve the
+canonical mixed-case host identifier and must fit the ext4 16-byte label limit.
+The label is a human-readable hardware association; `/etc/fstab` uses the
+verified filesystem UUID.
+
+The existing `pi-cl-storage` label on `pi4mB01` predates this convention and is
+grandfathered. It remains unchanged because preserving that qualified
+filesystem and its data takes precedence over cosmetic normalization.
 
 ### Network ranges
 
@@ -89,6 +110,7 @@ ingress address because the Web UI follows the application exposure standard.
 | DNS-only or non-HTTP services | A dedicated LoadBalancer IP is allowed when direct LAN protocol access is required |
 | Browser-facing applications | Use a `home.arpa` hostname, Traefik at `192.168.68.201`, a Kubernetes `Ingress` and an internal `ClusterIP` Service |
 | New DNS names | Record the name, state and owner in this page and the Service Catalog when implemented |
+| Storage disks | Use `data-disk-NN` and `<canonical-host>-dataNN`; preserve qualified legacy labels |
 | Future IP allocation | Confirm DHCP exclusion and address availability before committing a manifest; do not infer availability from a gap alone |
 
 ### Authoritative sources

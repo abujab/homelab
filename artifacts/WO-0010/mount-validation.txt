@@ -1,0 +1,10 @@
+pi4mB01:
+/dev/sda1 ext4 /srv/longhorn rw
+UUID=3e0e4776-2047-4962-bdd3-8a2e0e764a96
+
+pi4mB02 before reboot validation:
+/dev/sda1 ext4 /srv/longhorn rw
+UUID=ba294833-45e8-40e6-b5f6-ed785c80a7f9
+
+Both mount sources belong to their declared persistent whole disks. Temporary
+write-verification files were created and removed by the role.

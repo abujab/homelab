@@ -46,7 +46,7 @@ Services behind shared Traefik HTTPS ingress.
 
 | Entry | Classification | Current State | Dependency |
 |-------|----------------|---------------|------------|
-| Longhorn | Planned evaluation | **Not installed / planned evaluation** | At least one additional qualified storage node and a separately approved work order |
+| Longhorn | Planned evaluation | **Not installed / planned evaluation** | Approved storage architecture, mounted-path guard and separately approved work order |
 | `elm.home.arpa` | Reserved service name | No DNS record or deployed workload in current manifests | Approved IBM ELM publication work |
 | Observability stack | Planned | Prometheus, Grafana, Loki and Alertmanager are not installed | Approved observability architecture and work order |
 | GitOps platform | Planned | FluxCD and Argo CD are not installed | ADR resolution and approved work order |

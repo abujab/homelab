@@ -233,8 +233,9 @@ Stateful workload
 ```
 
 Longhorn is a planned evaluation, not an approved deployment. Evaluation is
-blocked until at least one additional node has independently qualified storage
-and a separate work order defines architecture, safety and acceptance criteria.
+now supported by two independently qualified storage nodes, but a separate work
+order must still approve architecture, mounted-path safety and acceptance
+criteria.
 A centralized NAS or enterprise storage system is only a possible future backup
 or storage component.
 
@@ -242,8 +243,8 @@ or storage component.
 
 | Capability | State | Dependency |
 |------------|-------|------------|
-| Additional qualified node storage | Planned | Enclosure availability and independent qualification |
-| Longhorn evaluation | Planned, blocked | At least one additional qualified storage node and approved work order |
+| Additional qualified node storage | Current | pi4mB01 and pi4mB02 independently qualified |
+| Longhorn evaluation | Planned, ready for review | Approved architecture, mounted-path guard and work order |
 | Observability | Planned | Approved stack and work order |
 | GitOps | Planned | Resolution of ADR-0005 and approved work order |
 | Secrets management | Planned | Approved security architecture |

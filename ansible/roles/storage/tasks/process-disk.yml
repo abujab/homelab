@@ -1,0 +1,19 @@
+---
+- name: Resolve and protect {{ storage_disk.id }}
+  ansible.builtin.include_tasks: resolve-device.yml
+
+- name: Initialize {{ storage_disk.id }}
+  ansible.builtin.include_tasks: initialize.yml
+  when: storage_mode == 'onboard'
+
+- name: Re-resolve {{ storage_disk.id }} after initialization
+  ansible.builtin.include_tasks: resolve-device.yml
+  when: storage_mode == 'onboard'
+
+- name: Reconcile {{ storage_disk.id }}
+  ansible.builtin.include_tasks: reconcile.yml
+  when: storage_mode in ['reconcile', 'onboard']
+
+- name: Qualify {{ storage_disk.id }}
+  ansible.builtin.include_tasks: qualify.yml
+  when: storage_mode == 'qualify'
