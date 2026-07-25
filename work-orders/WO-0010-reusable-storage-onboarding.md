@@ -1492,7 +1492,7 @@ This work order is complete when:
 - [x] WO-0010 was archived according to repository workflow after acceptance.
 - [x] Validation evidence exists under `artifacts/WO-0010/`.
 - [x] No Longhorn installation was included.
-- [ ] Codex opened a pull request for review.
+- [x] Codex opened a pull request for review.
 
 ---
 
