@@ -2,6 +2,8 @@
 site_name: Abdul's HomeLab
 site_description: Enterprise-inspired private cloud and hybrid homelab platform
 site_author: Abdul Jabbar
+site_url: https://abujab.github.io/homelab/
+
 repo_url: https://github.com/abujab/homelab
 repo_name: abujab/homelab
 
