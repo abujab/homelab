@@ -1,0 +1,13 @@
+Inventory identity:
+
+persistent_path=/dev/disk/by-id/wwn-0x50014ee2ac2a2b36
+resolved_device=/dev/sda
+model=WDC WD3200BEVT-22ZCT0
+serial=WD-WXE508N88014
+wwn=0x50014ee2ac2a2b36
+size_bytes=320072933376
+
+The role resolved the path to a whole disk and matched every configured field
+immediately before initialization. The Sabrent/JMicron enclosure also exposes
+its own serial, DD5641988396B; the enclosure serial was not used as disk
+identity.

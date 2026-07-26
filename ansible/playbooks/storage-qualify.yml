@@ -1,0 +1,26 @@
+---
+# Qualification is file-based and runs only on an already prepared filesystem.
+- name: Qualify explicitly selected storage
+  hosts: pis
+  become: true
+
+  vars:
+    storage_mode: qualify
+
+  pre_tasks:
+    - name: Require an explicit single-host limit
+      ansible.builtin.assert:
+        that:
+          - ansible_play_hosts_all | length == 1
+          - storage_target_disk_id | default('') | length > 0
+          - >-
+            storage_disks | default([]) |
+            selectattr('id', 'equalto', storage_target_disk_id) |
+            list | length == 1
+        fail_msg: >-
+          Storage qualification requires one explicitly limited host and one
+          declared disk selected by storage_target_disk_id.
+      run_once: true
+
+  roles:
+    - storage

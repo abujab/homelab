@@ -1,3 +1,24 @@
 ---
 # Unique network address for this Raspberry Pi.
 ansible_host: 192.168.68.102
+
+# Explicitly declared onboarding target for WO-0010.
+storage_disks:
+  - id: data-disk-01
+    sequence: 1
+    identity:
+      persistent_path: /dev/disk/by-id/wwn-0x50014ee2ac2a2b36
+      expected_model: WDC WD3200BEVT-22ZCT0
+      expected_serial: WD-WXE508N88014
+      expected_wwn: "0x50014ee2ac2a2b36"
+      expected_size_bytes: 320072933376
+    filesystem:
+      type: ext4
+      label: pi4mB02-data01
+    mount:
+      path: /srv/longhorn
+      options: defaults,nofail
+    partition:
+      number: 1
+    smart_device_type: sat
+    state: present

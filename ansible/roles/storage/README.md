@@ -4,32 +4,53 @@
 
 ## Purpose
 
-Install disk diagnostic tools and mount a pre-existing, explicitly identified filesystem for future Longhorn use.
+Manage the inventory-driven lifecycle for dedicated node storage.
 
 ## Scope
 
-The role validates the filesystem label, type, disk model and serial before mounting it at `/srv/longhorn`.
+The role validates persistent whole-disk identity, protects operating-system
+storage, initializes only explicitly authorized disks, mounts by filesystem
+UUID and runs file-based hardware qualification.
 
 ## Background
 
-Disk partitioning and filesystem creation are intentionally excluded because they are destructive operations requiring explicit operator approval.
+Discovery, destructive onboarding, qualification and normal reconciliation use
+separate playbooks. `storage_target_disk_id` selects one entry when onboarding
+or qualifying a multi-disk host. Runtime erase authorization is never stored in
+inventory.
 
 ## Architecture / Implementation
 
-The role resolves the partition through `LABEL=pi-cl-storage`, validates its parent disk against inventory variables, and uses `ansible.posix.mount` to create an idempotent `/etc/fstab` entry.
+`storage_disks` is a list, so a host may declare multiple disks. The role
+resolves each persistent path, validates model, serial, WWN and exact capacity,
+rejects root, boot, swap and unexpected mounted storage, and maintains one
+exact UUID-based fstab entry per mount. Filesystem type, label and UUID are
+compared as exact values. SMART passthrough is required during qualification,
+not during ordinary reconciliation.
+
+The role does not manage USB kernel command-line quirks or reboot nodes. The
+obsolete bridge workaround was removed after the powered enclosure qualified
+without it.
 
 ## Design Decisions
 
-Device names such as `/dev/sda` are never persisted because USB enumeration can change across boots.
+Device names such as `/dev/sda` are never persisted because USB enumeration can
+change across boots. Correctly prepared filesystems are validated rather than
+recreated.
 
 ## Best Practices
 
-Define an exact expected model and serial for every managed storage node.
+Run discovery first, use verified inventory values, keep erase tokens ephemeral,
+select exactly one disk for qualification, and add hosts to `storage_nodes` only
+after qualification passes. Qualification files are removed through an Ansible
+`always` cleanup path even when fio fails.
 
 ## Future Improvements
 
-Add other nodes only after their storage hardware has passed the same qualification process.
+Protect the future Longhorn data path against use when the external filesystem
+is absent.
 
 ## Related Documents
 
 - `docs/infrastructure/storage.md`
+- `docs/operations/storage-onboarding.md`

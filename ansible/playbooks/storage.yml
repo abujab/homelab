@@ -5,5 +5,8 @@
   hosts: storage_nodes
   become: true
 
+  vars:
+    storage_mode: reconcile
+
   roles:
     - storage

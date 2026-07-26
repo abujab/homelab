@@ -1,0 +1,108 @@
+---
+- name: Assert storage mode is valid
+  ansible.builtin.assert:
+    that:
+      - storage_mode in ['reconcile', 'onboard', 'qualify']
+      - storage_disks is sequence
+      - storage_disks is not string
+    fail_msg: "Invalid storage role mode or storage_disks schema."
+
+- name: Assert every storage disk has a complete schema
+  ansible.builtin.assert:
+    that:
+      - item.id | default('') | trim | length > 0
+      - item.sequence | default(0) | int > 0
+      - item.id == 'data-disk-%02d' | format(item.sequence | int)
+      - item.state | default('present') == 'present'
+      - item.identity.persistent_path | default('') is match('^/dev/disk/by-(id|path)/')
+      - item.identity.expected_model | default('') | trim | length > 0
+      - item.identity.expected_serial | default('') | trim | length > 0
+      - item.identity.expected_size_bytes | default(0) | int > 0
+      - item.filesystem.type | default('') == 'ext4'
+      - item.filesystem.label | default('') | trim | length > 0
+      - item.filesystem.label | length <= 16
+      - >-
+        item.filesystem.preserve_existing_label | default(false) | bool or
+        item.filesystem.label == inventory_hostname ~ '-data%02d' | format(item.sequence | int)
+      - item.mount.path | default('') is match('^/srv/')
+      - item.mount.options | default('') | trim | length > 0
+      - item.partition.number | default(0) | int == 1
+    fail_msg: "Incomplete or unsafe storage inventory entry: {{ item.id | default('unnamed') }}"
+  loop: "{{ storage_disks }}"
+  loop_control:
+    label: "{{ item.id | default('unnamed') }}"
+
+- name: Assert disk IDs are unique on the host
+  ansible.builtin.assert:
+    that:
+      - storage_disks | map(attribute='id') | list | unique | length == storage_disks | length
+      - storage_disks | map(attribute='sequence') | list | unique | length == storage_disks | length
+      - storage_disks | map(attribute='mount.path') | list | unique | length == storage_disks | length
+      - storage_disks | map(attribute='filesystem.label') | list | unique | length == storage_disks | length
+      - storage_disks | map(attribute='identity.persistent_path') | list | unique | length == storage_disks | length
+    fail_msg: >-
+      Disk sequences, IDs, mount paths, labels and persistent identities must
+      be unique per host.
+
+- name: Collect filesystem labels declared across inventory
+  ansible.builtin.set_fact:
+    storage_inventory_labels: >-
+      {{ storage_inventory_labels | default([]) +
+         (hostvars[item].storage_disks | default([]) |
+          map(attribute='filesystem.label') | list) }}
+  loop: "{{ groups['all'] }}"
+
+- name: Assert filesystem labels are globally unique
+  ansible.builtin.assert:
+    that:
+      - storage_inventory_labels | unique | length == storage_inventory_labels | length
+    fail_msg: "Filesystem labels must be unique across inventory."
+
+- name: Resolve all declared whole-disk aliases before storage operations
+  ansible.builtin.command:
+    cmd: "readlink -f {{ item.identity.persistent_path }}"
+  loop: "{{ storage_disks }}"
+  loop_control:
+    label: "{{ item.id }}"
+  register: storage_declared_resolutions
+  changed_when: false
+  failed_when: false
+
+- name: Verify every declared alias resolves to a whole disk
+  ansible.builtin.shell:
+    cmd: |
+      test "$(lsblk -dn -o TYPE {{ item.stdout | quote }} 2>/dev/null)" = "disk"
+    executable: /bin/bash
+  loop: "{{ storage_declared_resolutions.results }}"
+  loop_control:
+    label: "{{ item.item.id }}"
+  register: storage_declared_device_types
+  changed_when: false
+  failed_when: false
+
+- name: Reject missing identities and aliases to the same physical disk
+  ansible.builtin.assert:
+    that:
+      - >-
+        storage_declared_resolutions.results |
+        map(attribute='rc') | select('ne', 0) | list | length == 0
+      - >-
+        storage_declared_device_types.results |
+        map(attribute='rc') | select('ne', 0) | list | length == 0
+      - >-
+        storage_declared_resolutions.results | map(attribute='stdout') |
+        list | unique | length == storage_disks | length
+    fail_msg: >-
+      Every declared persistent path must resolve, and separate inventory
+      entries must not resolve to the same physical disk.
+
+- name: Validate explicitly selected storage target
+  ansible.builtin.assert:
+    that:
+      - >-
+        storage_target_disk_id | length == 0 or
+        storage_disks | selectattr('id', 'equalto', storage_target_disk_id) | list | length == 1
+      - storage_mode not in ['onboard', 'qualify'] or storage_target_disk_id | length > 0
+    fail_msg: >-
+      storage_target_disk_id must select exactly one declared disk and is
+      mandatory for destructive onboarding and qualification.

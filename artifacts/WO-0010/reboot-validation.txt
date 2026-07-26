@@ -1,0 +1,19 @@
+pi4mB02 was rebooted twice with the externally powered Sabrent enclosure and
+disk connected.
+
+Both boots passed:
+
+- SSH returned after the node restart
+- /proc/uptime confirmed a fresh boot
+- old 0bda:9201 USB-storage and usbcore quirks were absent from /proc/cmdline
+- /dev/sda1 mounted automatically at /srv/longhorn as ext4 read/write
+- filesystem label remained pi4mB02-data01
+- UUID remained ba294833-45e8-40e6-b5f6-ed785c80a7f9
+- fstab retained exactly one UUID-based entry with defaults,nofail
+- a temporary write-test file was created, verified and removed
+- USB remained UAS at 5000M
+- boot kernel review found no critical storage message
+- the K3s control plane reported pi4mB02 Ready after validation
+
+The first reboot produced one UDMA CRC history increment. The second reboot and
+five-minute follow-up I/O produced no further increment. See smart-after.txt.

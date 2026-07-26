@@ -1,0 +1,24 @@
+Full qualification stability workload:
+
+- file: /srv/longhorn/.storage-qualification-stability (removed afterward)
+- size: 2 GiB
+- workload: randrw, 70% read
+- block size: 4 KiB
+- engine / depth: libaio / 16
+- direct I/O: enabled
+- runtime: 3600.111 seconds
+- read: 170 IOPS, 683 KiB/s, 2400 MiB
+- write: 73 IOPS, 293 KiB/s, 1031 MiB
+- disk utilization: 95.86%
+- fio result: err=0
+
+Post-reboot interface follow-up:
+
+- runtime: 300.083 seconds
+- read: 176 IOPS, 707 KiB/s, 207 MiB
+- write: 75 IOPS, 303 KiB/s, 88.8 MiB
+- disk utilization: 98.50%
+- fio result: err=0
+- UDMA CRC count: 1 before and 1 after
+
+Both stability files were removed after testing.

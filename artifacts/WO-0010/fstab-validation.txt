@@ -1,0 +1,9 @@
+pi4mB01:
+UUID=3e0e4776-2047-4962-bdd3-8a2e0e764a96 /srv/longhorn ext4 defaults,nofail 0 2
+
+pi4mB02:
+UUID=ba294833-45e8-40e6-b5f6-ed785c80a7f9 /srv/longhorn ext4 defaults,nofail 0 2
+
+Each host has exactly one /srv/longhorn entry. Neither entry depends on a
+/dev/sdX path. The pi4mB01 mount was migrated non-destructively from LABEL to
+its existing UUID.

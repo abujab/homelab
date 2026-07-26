@@ -91,30 +91,32 @@ reference and development workflow navigation.
 
 ### Phase 6A - Storage Hardware Foundation
 
-Status: Complete for `pi4mB01`; incomplete cluster-wide
+Status: Complete for `pi4mB01` and `pi4mB02`
 
 - Hitachi 160 GB disk independently qualified on `pi4mB01`
 - ext4 label and persistent `/srv/longhorn` host mount
 - exact model and serial validation through Ansible
 - SMART, performance, reboot and sustained-I/O evidence
+- reusable discovery, guarded onboarding, qualification and reconciliation lifecycle
+- independently qualified 320 GB disk on `pi4mB02`
 
 The host path is preparatory. It does not provide Kubernetes replication.
 
 ### Phase 6B - Storage Expansion and Distributed Storage
 
-Status: Blocked
+Status: Ready for architecture and work-order review
 
 ```text
+Two independently qualified storage nodes
+    satisfy the hardware prerequisite for
 Longhorn evaluation
-    depends on
-at least one additional independently qualified storage node
-    and
-approved storage architecture and work order
+    which still depends on
+approved storage architecture, mounted-path protection and work order
 ```
 
-The known WD1600BEVT disk for `pi4mB02` is not connected or qualified.
-Longhorn is not installed. NAS and enterprise storage options remain
-Exploratory.
+The WDC WD3200BEVT replacement disk on `pi4mB02` is qualified through the
+externally powered UAS enclosure. Longhorn is not installed. NAS and enterprise
+storage options remain Exploratory.
 
 ### Phase 7 - Observability
 
@@ -162,8 +164,8 @@ placement. No AI service is currently deployed.
 
 | Capability | Status | Primary Dependency |
 |------------|--------|--------------------|
-| Additional disk qualification | Ready when enclosure and disk are available | Stable USB hardware |
-| Longhorn evaluation | Blocked | At least two qualified storage nodes total |
+| Additional disk qualification | Complete for pi4mB02 | Continue SMART and USB monitoring |
+| Longhorn evaluation | Ready for review | Approved architecture, mounted-path guard and WO-0011 |
 | Backup target | Exploratory | Storage and recovery architecture |
 | Observability | Planned | Approved stack and work order |
 | GitOps | Planned | ADR-0005 resolution |

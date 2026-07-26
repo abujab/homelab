@@ -1,0 +1,29 @@
+---
+# Destructive initialization is limited to one explicitly confirmed host/disk.
+- name: Onboard explicitly authorized storage
+  hosts: pis
+  become: true
+
+  vars:
+    storage_mode: onboard
+
+  pre_tasks:
+    - name: Require an explicit single-host limit
+      ansible.builtin.assert:
+        that:
+          - ansible_play_hosts_all | length == 1
+          - storage_target_disk_id | default('') | length > 0
+          - >-
+            storage_disks | default([]) |
+            selectattr('id', 'equalto', storage_target_disk_id) |
+            list | length == 1
+          - >-
+            storage_destroy_confirmation | default('') ==
+            inventory_hostname ~ ':' ~ storage_target_disk_id ~ ':ERASE'
+        fail_msg: >-
+          Storage onboarding must target one host and one declared disk. Use
+          --limit, storage_target_disk_id and its exact runtime erase token.
+      run_once: true
+
+  roles:
+    - storage

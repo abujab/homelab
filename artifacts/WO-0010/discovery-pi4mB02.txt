@@ -1,0 +1,15 @@
+Read-only discovery result, 2026-07-25
+
+Host: pi4mB02
+Root/boot parent: mmcblk0 (Raspberry Pi operating-system disk)
+Dedicated disk persistent path: /dev/disk/by-id/wwn-0x50014ee2ac2a2b36
+Resolved device before onboarding: /dev/sda
+Model: WDC WD3200BEVT-22ZCT0
+Serial: WD-WXE508N88014
+WWN: 0x50014ee2ac2a2b36
+Capacity: 320072933376 bytes
+Transport: USB
+Enclosure: Sabrent/JMicron, USB 152d:a578, serial DD5641988396B
+
+The candidate disk was not the root, boot or swap parent and had no active
+mount. Discovery performed no changes.

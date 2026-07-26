@@ -1,0 +1,109 @@
+---
+# Read-only discovery is safe on any node and does not require storage inventory.
+- name: Discover attached storage without changing it
+  hosts: pis
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Collect physical disk inventory
+      ansible.builtin.command:
+        cmd: >-
+          lsblk -d -b -o NAME,PATH,TYPE,SIZE,MODEL,SERIAL,WWN,TRAN,RO
+      register: storage_discovery_disks
+      changed_when: false
+
+    - name: Collect human-readable physical disk inventory
+      ansible.builtin.command:
+        cmd: >-
+          lsblk -d -o NAME,PATH,TYPE,SIZE,MODEL,SERIAL,WWN,TRAN,RO
+      register: storage_discovery_disks_human
+      changed_when: false
+
+    - name: Collect partitions, filesystems and mounts
+      ansible.builtin.command:
+        cmd: >-
+          lsblk -b -o NAME,PATH,TYPE,SIZE,MODEL,SERIAL,WWN,TRAN,FSTYPE,LABEL,UUID,MOUNTPOINTS
+      register: storage_discovery_topology
+      changed_when: false
+
+    - name: Collect root and boot sources
+      ansible.builtin.shell:
+        cmd: |
+          for storage_mount in / /boot /boot/firmware; do
+            storage_source=$(findmnt -n -o SOURCE --target "$storage_mount" 2>/dev/null) || continue
+            printf '%s source=%s parents=%s\n' \
+              "$storage_mount" "$storage_source" \
+              "$(lsblk -sno PATH,TYPE "$storage_source" | tr '\n' ';')"
+          done
+        executable: /bin/bash
+      register: storage_discovery_system_disks
+      changed_when: false
+
+    - name: Collect active swap devices
+      ansible.builtin.command:
+        cmd: "swapon --show --noheadings --raw --output NAME,TYPE,SIZE,USED,PRIO"
+      register: storage_discovery_swap
+      changed_when: false
+
+    - name: Collect persistent paths and udev properties
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          lsblk -dnpo PATH,TYPE | awk '$2 == "disk" { print $1 }' | while read -r storage_device; do
+            printf 'DEVICE=%s\n' "$storage_device"
+            find -L /dev/disk/by-id -samefile "$storage_device" 2>/dev/null | sort
+            find -L /dev/disk/by-path -samefile "$storage_device" 2>/dev/null | sort
+            udevadm info --query=property --name="$storage_device" |
+              grep -E \
+                -e '^(ID_VENDOR|ID_MODEL|ID_SERIAL|ID_SERIAL_SHORT|ID_WWN)=' \
+                -e '^(ID_PATH|ID_BUS|ID_USB_VENDOR_ID|ID_USB_MODEL_ID)=' || true
+          done
+        executable: /bin/bash
+      register: storage_discovery_identity
+      changed_when: false
+
+    - name: Assess whether each physical disk appears safe for onboarding
+      ansible.builtin.shell:
+        cmd: |
+          set -o errexit -o nounset -o pipefail
+          storage_protected=$(
+            for storage_mount in / /boot /boot/firmware; do
+              storage_source=$(findmnt -n -o SOURCE --target "$storage_mount" 2>/dev/null) || continue
+              lsblk -sno PATH,TYPE "$storage_source" | awk '$2 == "disk" { print $1 }'
+            done | sort -u
+          )
+          storage_swap=$(
+            swapon --show --noheadings --raw --output NAME | while read -r storage_device; do
+              [ -b "$storage_device" ] || continue
+              lsblk -sno PATH,TYPE "$storage_device" | awk '$2 == "disk" { print $1 }'
+            done | sort -u
+          )
+          lsblk -dnpo PATH,TYPE | awk '$2 == "disk" { print $1 }' |
+            while read -r storage_device; do
+              storage_reason=""
+              grep -Fxq "$storage_device" <<< "$storage_protected" && storage_reason="operating-system-or-boot"
+              grep -Fxq "$storage_device" <<< "$storage_swap" && storage_reason="active-swap"
+              storage_mounts=$(lsblk -nrpo MOUNTPOINTS "$storage_device" | sed '/^$/d')
+              [ -n "$storage_mounts" ] && storage_reason="mounted-filesystem"
+              if [ -z "$storage_reason" ]; then
+                printf '%s SAFE_FOR_ONBOARDING=yes\n' "$storage_device"
+              else
+                printf '%s SAFE_FOR_ONBOARDING=no reason=%s\n' "$storage_device" "$storage_reason"
+              fi
+            done
+        executable: /bin/bash
+      register: storage_discovery_safety
+      changed_when: false
+
+    - name: Display read-only storage discovery
+      ansible.builtin.debug:
+        msg:
+          hostname: "{{ inventory_hostname }}"
+          physical_disks_bytes: "{{ storage_discovery_disks.stdout_lines }}"
+          physical_disks_human: "{{ storage_discovery_disks_human.stdout_lines }}"
+          topology: "{{ storage_discovery_topology.stdout_lines }}"
+          root_and_boot: "{{ storage_discovery_system_disks.stdout_lines }}"
+          active_swap: "{{ storage_discovery_swap.stdout_lines }}"
+          persistent_identity: "{{ storage_discovery_identity.stdout_lines }}"
+          onboarding_safety: "{{ storage_discovery_safety.stdout_lines }}"

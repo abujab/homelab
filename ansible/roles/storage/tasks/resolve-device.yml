@@ -1,0 +1,108 @@
+---
+- name: Check persistent identity for {{ storage_disk.id }}
+  ansible.builtin.stat:
+    path: "{{ storage_disk.identity.persistent_path }}"
+    follow: true
+  register: storage_by_id_stat
+
+- name: Resolve persistent identity for {{ storage_disk.id }}
+  ansible.builtin.command:
+    cmd: "readlink -f {{ storage_disk.identity.persistent_path }}"
+  register: storage_resolved_device_command
+  changed_when: false
+  when: storage_by_id_stat.stat.exists
+
+- name: Fail closed when persistent identity is unavailable
+  ansible.builtin.assert:
+    that:
+      - storage_by_id_stat.stat.exists
+      - storage_by_id_stat.stat.isblk | default(false)
+      - storage_resolved_device_command.stdout | default('') | trim | length > 0
+    fail_msg: >-
+      Persistent whole-disk identity is missing or invalid:
+      {{ storage_disk.identity.persistent_path }}
+
+- name: Record current kernel device for {{ storage_disk.id }}
+  ansible.builtin.set_fact:
+    storage_resolved_device: "{{ storage_resolved_device_command.stdout | trim }}"
+
+- name: Read exact disk identity for {{ storage_disk.id }}
+  ansible.builtin.command:
+    cmd: >-
+      lsblk -dn -b -J -o PATH,TYPE,SIZE,MODEL,SERIAL,WWN,RO
+      {{ storage_resolved_device }}
+  register: storage_identity
+  changed_when: false
+
+- name: Record structured disk identity for {{ storage_disk.id }}
+  ansible.builtin.set_fact:
+    storage_identity_data: >-
+      {{ (storage_identity.stdout | from_json).blockdevices | first }}
+
+- name: Read disk topology for {{ storage_disk.id }}
+  ansible.builtin.command:
+    cmd: "lsblk -nrpo PATH,TYPE,MOUNTPOINTS {{ storage_resolved_device }}"
+  register: storage_topology
+  changed_when: false
+
+- name: Resolve protected operating-system parent disks
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      for storage_mount in / /boot /boot/firmware; do
+        storage_source=$(findmnt -n -o SOURCE --target "$storage_mount" 2>/dev/null) || continue
+        lsblk -sno PATH,TYPE "$storage_source" | awk '$2 == "disk" { print $1 }'
+      done | sort -u
+    executable: /bin/bash
+  register: storage_os_disks
+  changed_when: false
+
+- name: Resolve active swap parent disks
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      swapon --show --noheadings --raw --output NAME | while read -r storage_swap; do
+        [ -b "$storage_swap" ] || continue
+        lsblk -sno PATH,TYPE "$storage_swap" | awk '$2 == "disk" { print $1 }'
+      done | sort -u
+    executable: /bin/bash
+  register: storage_swap_disks
+  changed_when: false
+
+- name: Assert exact disk identity and OS protection
+  ansible.builtin.assert:
+    that:
+      - storage_identity_data.type == 'disk'
+      - not storage_identity_data.ro | bool
+      - storage_identity_data.model | trim == storage_disk.identity.expected_model
+      - storage_identity_data.serial | trim == storage_disk.identity.expected_serial
+      - storage_identity_data.size | int == storage_disk.identity.expected_size_bytes | int
+      - >-
+        storage_disk.identity.expected_wwn | default('') | length == 0 or
+        storage_identity_data.wwn | default('') | lower ==
+        storage_disk.identity.expected_wwn | lower
+      - storage_resolved_device not in storage_os_disks.stdout_lines
+      - storage_resolved_device not in storage_swap_disks.stdout_lines
+    fail_msg: >-
+      Refusing storage operation for {{ storage_disk.id }}. Resolved={{ storage_resolved_device }},
+      observed={{ storage_identity.stdout }}, OS disks={{ storage_os_disks.stdout_lines }},
+      swap disks={{ storage_swap_disks.stdout_lines }}.
+
+- name: Find mounted children outside the declared target
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      lsblk -nrpo MOUNTPOINTS {{ storage_resolved_device }} |
+        sed '/^$/d' |
+        grep -Fvx -- {{ storage_disk.mount.path | quote }} || true
+    executable: /bin/bash
+  register: storage_unexpected_mounts
+  changed_when: false
+
+- name: Refuse disks used by unknown mounted filesystems
+  ansible.builtin.assert:
+    that:
+      - storage_unexpected_mounts.stdout_lines | length == 0
+    fail_msg: >-
+      {{ storage_disk.id }} has mounted children outside {{ storage_disk.mount.path }}:
+      {{ storage_unexpected_mounts.stdout_lines }}

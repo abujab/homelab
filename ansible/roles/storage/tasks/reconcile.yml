@@ -1,0 +1,121 @@
+---
+- name: Inspect prepared state for {{ storage_disk.id }}
+  ansible.builtin.include_tasks: inspect-state.yml
+
+- name: Assert declared partition and filesystem state
+  ansible.builtin.assert:
+    that:
+      - storage_is_prepared
+      - storage_partition_table.stdout is search(':gpt:')
+      - storage_partition_count.stdout | int == 1
+      - storage_partition_device | length > 0
+      - storage_observed_filesystem_type == storage_disk.filesystem.type
+      - storage_observed_filesystem_label == storage_disk.filesystem.label
+      - storage_observed_filesystem_uuid | length > 0
+    fail_msg: >-
+      {{ storage_disk.id }} differs from inventory. Normal reconciliation is
+      non-destructive and will not repair it by formatting.
+
+- name: Record filesystem UUID
+  ansible.builtin.set_fact:
+    storage_filesystem_uuid: "{{ storage_observed_filesystem_uuid }}"
+
+- name: Create storage mount point
+  ansible.builtin.file:
+    path: "{{ storage_disk.mount.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Persist and mount storage by filesystem UUID
+  ansible.posix.mount:
+    path: "{{ storage_disk.mount.path }}"
+    src: "UUID={{ storage_filesystem_uuid }}"
+    fstype: "{{ storage_disk.filesystem.type }}"
+    opts: "{{ storage_disk.mount.options }}"
+    dump: "0"
+    passno: "2"
+    state: mounted
+
+- name: Read structured active mount contract
+  ansible.builtin.command:
+    cmd: >-
+      findmnt --json --output SOURCE,FSTYPE,TARGET
+      --target {{ storage_disk.mount.path }}
+  register: storage_mount_verification
+  changed_when: false
+
+- name: Record structured active mount contract
+  ansible.builtin.set_fact:
+    storage_active_mount: >-
+      {{ (storage_mount_verification.stdout | from_json).filesystems | first }}
+
+- name: Read active mount filesystem UUID
+  ansible.builtin.command:
+    cmd: "blkid -s UUID -o value {{ storage_active_mount.source }}"
+  register: storage_active_mount_uuid
+  changed_when: false
+
+- name: Resolve active mount source parent disk
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      lsblk -sno PATH,TYPE {{ storage_active_mount.source | quote }} |
+        awk '$2 == "disk" { print $1 }'
+    executable: /bin/bash
+  register: storage_mount_parent
+  changed_when: false
+
+- name: Read persistent mount contract
+  ansible.builtin.shell:
+    cmd: |
+      awk -v target={{ storage_disk.mount.path | quote }} \
+        '$2 == target { print $1 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 }' \
+        /etc/fstab
+    executable: /bin/bash
+  register: storage_fstab_entries
+  changed_when: false
+
+- name: Assert one persistent mount entry exists
+  ansible.builtin.assert:
+    that:
+      - storage_fstab_entries.stdout_lines | length == 1
+    fail_msg: >-
+      Expected exactly one /etc/fstab entry for {{ storage_disk.mount.path }},
+      observed {{ storage_fstab_entries.stdout_lines | length }}.
+
+- name: Record persistent mount fields
+  ansible.builtin.set_fact:
+    storage_fstab_fields: "{{ storage_fstab_entries.stdout_lines | first | split('\t') }}"
+
+- name: Verify mount is writable without retaining test data
+  ansible.builtin.shell:
+    cmd: |
+      set -o errexit -o nounset
+      storage_test_file=$(mktemp {{ storage_disk.mount.path | quote }}/.storage-verify.XXXXXX)
+      trap 'rm -f "$storage_test_file"' EXIT
+      test -w "$storage_test_file"
+    executable: /bin/bash
+  changed_when: false
+
+- name: Assert final mount contract
+  ansible.builtin.assert:
+    that:
+      - storage_active_mount_uuid.stdout | trim == storage_filesystem_uuid
+      - storage_active_mount.fstype == storage_disk.filesystem.type
+      - storage_active_mount.target == storage_disk.mount.path
+      - storage_resolved_device in storage_mount_parent.stdout_lines
+      - storage_fstab_fields | length == 6
+      - storage_fstab_fields[0] == 'UUID=' ~ storage_filesystem_uuid
+      - storage_fstab_fields[1] == storage_disk.mount.path
+      - storage_fstab_fields[2] == storage_disk.filesystem.type
+      - >-
+        storage_disk.mount.options.split(',') |
+        difference(storage_fstab_fields[3].split(',')) | length == 0
+      - storage_fstab_fields[4] == '0'
+      - storage_fstab_fields[5] == '2'
+    fail_msg: >-
+      Mount verification failed for {{ storage_disk.id }}:
+      active={{ storage_active_mount }}, UUID={{ storage_active_mount_uuid.stdout | trim }},
+      parent={{ storage_mount_parent.stdout_lines }}, fstab={{ storage_fstab_entries.stdout_lines }}.

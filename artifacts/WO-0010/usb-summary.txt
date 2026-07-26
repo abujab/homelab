@@ -1,0 +1,16 @@
+pi4mB02 qualified physical path:
+
+- enclosure/bridge: Sabrent/JMicron
+- USB vendor:product: 152d:a578
+- enclosure serial: DD5641988396B
+- topology: USB 3 root hub -> mass-storage device
+- negotiated speed: 5000M (USB 3 SuperSpeed)
+- kernel driver: uas
+- power: externally powered enclosure
+
+The bridge exposes SMART through SAT. Its enclosure serial is distinct from
+the disk serial and is not a sufficient persistent disk identity by itself.
+
+Legacy boot parameters for the previous 0bda:9201 bridge were removed from
+/boot/firmware/cmdline.txt. They do not apply to the replacement enclosure;
+their removal becomes active after the controlled reboot.

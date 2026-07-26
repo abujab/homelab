@@ -1,0 +1,9 @@
+The first 160 GB WD candidate connected to pi4mB02 was rejected before any
+partitioning or formatting:
+
+- Current_Pending_Sector increased from 7 to 8
+- SMART short self-test failed at LBA 25
+
+The disk was unmounted and physically replaced. No destructive operation was
+performed on it. WO-0010 onboarding used the independently discovered 320 GB
+replacement identified in identity-pi4mB02.txt.

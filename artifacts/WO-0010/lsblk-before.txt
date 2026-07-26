@@ -1,0 +1,7 @@
+pi4mB02 before onboarding, selected fields:
+
+NAME PATH     TYPE         SIZE MODEL                    SERIAL            TRAN
+sda  /dev/sda disk 320072933376 WDC WD3200BEVT-22ZCT0   WD-WXE508N88014   usb
+
+The selected disk had no active mount. mmcblk0 was independently identified as
+the operating-system disk and excluded.

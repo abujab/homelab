@@ -1,0 +1,112 @@
+---
+- name: Inspect initialization state for {{ storage_disk.id }}
+  ansible.builtin.include_tasks: inspect-state.yml
+
+- name: Inspect mounts on an unprepared onboarding target
+  ansible.builtin.shell:
+    cmd: |
+      lsblk -nrpo MOUNTPOINTS {{ storage_resolved_device }} | sed '/^$/d'
+    executable: /bin/bash
+  register: storage_initialization_mounts
+  changed_when: false
+  when: not storage_is_prepared
+
+- name: Refuse to initialize any mounted filesystem
+  ansible.builtin.assert:
+    that:
+      - storage_initialization_mounts.stdout_lines | default([]) | length == 0
+    fail_msg: >-
+      Refusing to initialize {{ storage_disk.id }} because it has an active
+      mount: {{ storage_initialization_mounts.stdout_lines | default([]) }}
+  when: not storage_is_prepared
+
+- name: Read existing signatures before authorized initialization
+  ansible.builtin.command:
+    cmd: "wipefs --no-act {{ storage_resolved_device }}"
+  register: storage_existing_signatures
+  changed_when: false
+  when: not storage_is_prepared
+
+- name: Display destructive operation target
+  ansible.builtin.debug:
+    msg:
+      inventory_hostname: "{{ inventory_hostname }}"
+      disk_id: "{{ storage_disk.id }}"
+      persistent_identity: "{{ storage_disk.identity.persistent_path }}"
+      resolved_device: "{{ storage_resolved_device }}"
+      observed_identity: "{{ storage_identity.stdout }}"
+      existing_partition_table: "{{ storage_partition_table.stdout_lines }}"
+      existing_topology: "{{ storage_topology.stdout_lines }}"
+      existing_signatures: "{{ storage_existing_signatures.stdout_lines | default([]) }}"
+      target_filesystem: "{{ storage_disk.filesystem.type }}"
+      target_label: "{{ storage_disk.filesystem.label }}"
+      target_mount: "{{ storage_disk.mount.path }}"
+  when: not storage_is_prepared
+
+- name: Require exact runtime erase confirmation
+  ansible.builtin.assert:
+    that:
+      - storage_destroy_confirmation == inventory_hostname ~ ':' ~ storage_disk.id ~ ':ERASE'
+    fail_msg: >-
+      Destructive onboarding requires exact runtime confirmation:
+      {{ inventory_hostname }}:{{ storage_disk.id }}:ERASE
+  when: not storage_is_prepared
+
+- name: Remove existing disk and filesystem signatures
+  ansible.builtin.command:
+    cmd: "wipefs --all {{ storage_resolved_device }}"
+  when: not storage_is_prepared
+  changed_when: true
+
+- name: Create GPT partition table
+  ansible.builtin.command:
+    cmd: "parted -s {{ storage_resolved_device }} mklabel gpt"
+  when: not storage_is_prepared
+  changed_when: true
+
+- name: Create data partition
+  ansible.builtin.command:
+    cmd: >-
+      parted -s -a optimal {{ storage_resolved_device }}
+      mkpart primary {{ storage_disk.filesystem.type }} 1MiB 100%
+  when: not storage_is_prepared
+  changed_when: true
+
+- name: Wait for kernel partition discovery
+  ansible.builtin.command:
+    cmd: "udevadm settle"
+  when: not storage_is_prepared
+  changed_when: false
+
+- name: Revalidate whole-disk identity after partitioning
+  ansible.builtin.include_tasks: resolve-device.yml
+  when: not storage_is_prepared
+
+- name: Locate newly created partition
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      lsblk -nrpo PATH,PARTN {{ storage_resolved_device }} |
+        awk '$2 == {{ storage_disk.partition.number | int }} { print $1 }'
+    executable: /bin/bash
+  register: storage_new_partition
+  changed_when: false
+  retries: 10
+  delay: 1
+  until: storage_new_partition.stdout | trim | length > 0
+  when: not storage_is_prepared
+
+- name: Create ext4 filesystem with unique label
+  ansible.builtin.command:
+    cmd: >-
+      mkfs.ext4 -F -L {{ storage_disk.filesystem.label }}
+      {{ storage_new_partition.stdout | trim }}
+  when: not storage_is_prepared
+  changed_when: true
+
+- name: Report already prepared disk
+  ansible.builtin.debug:
+    msg: >-
+      {{ storage_disk.id }} already has the declared GPT/ext4/label state;
+      destructive initialization was skipped.
+  when: storage_is_prepared

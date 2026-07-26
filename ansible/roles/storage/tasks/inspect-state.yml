@@ -1,0 +1,73 @@
+---
+- name: Inspect partition table for {{ storage_disk.id }}
+  ansible.builtin.command:
+    cmd: "parted -ms {{ storage_resolved_device }} unit B print"
+  register: storage_partition_table
+  changed_when: false
+  failed_when: storage_partition_table.rc not in [0, 1]
+
+- name: Locate configured partition for {{ storage_disk.id }}
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      lsblk -nrpo PATH,PARTN {{ storage_resolved_device }} |
+        awk '$2 == {{ storage_disk.partition.number | int }} { print $1 }'
+    executable: /bin/bash
+  register: storage_partition_device_command
+  changed_when: false
+
+- name: Record configured partition path
+  ansible.builtin.set_fact:
+    storage_partition_device: "{{ storage_partition_device_command.stdout | trim }}"
+
+- name: Count disk partitions
+  ansible.builtin.shell:
+    cmd: |
+      lsblk -nrpo TYPE {{ storage_resolved_device }} |
+        awk '$1 == "part" { count++ } END { print count + 0 }'
+    executable: /bin/bash
+  register: storage_partition_count
+  changed_when: false
+
+- name: Read exact existing filesystem type
+  ansible.builtin.command:
+    cmd: "blkid -s TYPE -o value {{ storage_partition_device }}"
+  register: storage_existing_filesystem_type
+  changed_when: false
+  failed_when: storage_existing_filesystem_type.rc not in [0, 2]
+  when: storage_partition_device | length > 0
+
+- name: Read exact existing filesystem label
+  ansible.builtin.command:
+    cmd: "blkid -s LABEL -o value {{ storage_partition_device }}"
+  register: storage_existing_filesystem_label
+  changed_when: false
+  failed_when: storage_existing_filesystem_label.rc not in [0, 2]
+  when: storage_partition_device | length > 0
+
+- name: Read exact existing filesystem UUID
+  ansible.builtin.command:
+    cmd: "blkid -s UUID -o value {{ storage_partition_device }}"
+  register: storage_existing_filesystem_uuid
+  changed_when: false
+  failed_when: storage_existing_filesystem_uuid.rc not in [0, 2]
+  when: storage_partition_device | length > 0
+
+- name: Record exact existing filesystem metadata
+  ansible.builtin.set_fact:
+    storage_observed_filesystem_type: >-
+      {{ storage_existing_filesystem_type.stdout | default('') | trim }}
+    storage_observed_filesystem_label: >-
+      {{ storage_existing_filesystem_label.stdout | default('') | trim }}
+    storage_observed_filesystem_uuid: >-
+      {{ storage_existing_filesystem_uuid.stdout | default('') | trim }}
+
+- name: Determine whether desired state is already prepared
+  ansible.builtin.set_fact:
+    storage_is_prepared: >-
+      {{ ':gpt:' in storage_partition_table.stdout
+         and storage_partition_count.stdout | int == 1
+         and storage_partition_device | length > 0
+         and storage_observed_filesystem_type == storage_disk.filesystem.type
+         and storage_observed_filesystem_label == storage_disk.filesystem.label
+         and storage_observed_filesystem_uuid | length > 0 }}

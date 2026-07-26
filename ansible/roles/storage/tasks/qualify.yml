@@ -1,0 +1,193 @@
+---
+- name: Reconcile prepared storage before qualification
+  ansible.builtin.include_tasks: reconcile.yml
+
+- name: Capture USB topology
+  ansible.builtin.command:
+    cmd: "lsusb -t"
+  register: storage_qualification_usb_tree
+  changed_when: false
+
+- name: Capture USB devices
+  ansible.builtin.command:
+    cmd: "lsusb"
+  register: storage_qualification_usb
+  changed_when: false
+
+- name: Capture SMART state before qualification
+  ansible.builtin.command:
+    cmd: >-
+      smartctl -d {{ storage_disk.smart_device_type | default('sat') }}
+      -x {{ storage_resolved_device }}
+  register: storage_qualification_smart_before
+  changed_when: false
+  failed_when: storage_qualification_smart_before.rc not in [0, 4]
+
+- name: Assert SMART health before qualification
+  ansible.builtin.assert:
+    that:
+      - "'SMART overall-health self-assessment test result: PASSED' in storage_qualification_smart_before.stdout"
+      - storage_qualification_smart_before.stdout is not search('Completed:.*failure')
+      - "storage_qualification_smart_before.stdout is not search('ATA Error Count: [1-9]')"
+    fail_msg: "Critical SMART health criteria failed for {{ storage_disk.id }}."
+
+- name: Assert critical SMART counters before qualification
+  ansible.builtin.assert:
+    that:
+      - >-
+        storage_qualification_smart_before.stdout is search(
+          item ~ '.*\s0$|' ~ item ~ '.*\s0\n', multiline=True)
+    fail_msg: "{{ item }} is non-zero or unavailable for {{ storage_disk.id }}."
+  loop:
+    - Reallocated_Sector_Ct
+    - Current_Pending_Sector
+    - Offline_Uncorrectable
+
+- name: Record pre-qualification UDMA CRC history
+  ansible.builtin.set_fact:
+    storage_qualification_crc_before: >-
+      {{ storage_qualification_smart_before.stdout |
+         regex_findall('(?m)^.*UDMA_CRC_Error_Count.*\s(\d+)\s*$') }}
+
+- name: Assert UDMA CRC history is available
+  ansible.builtin.assert:
+    that:
+      - storage_qualification_crc_before | length == 1
+    fail_msg: "UDMA CRC history is unavailable for {{ storage_disk.id }}."
+
+- name: Capture kernel storage baseline
+  ansible.builtin.command:
+    cmd: "journalctl -k --no-pager"
+  register: storage_qualification_kernel_before
+  changed_when: false
+
+- name: Run file-based qualification with guaranteed cleanup
+  block:
+    - name: Run file-based performance baselines
+      ansible.builtin.command:
+        argv:
+          - "{{ storage_fio_binary }}"
+          - "--name={{ item.name }}"
+          - "--filename={{ storage_disk.mount.path }}/.storage-qualification-{{ item.name }}"
+          - "--rw={{ item.rw }}"
+          - "--bs={{ item.bs }}"
+          - --size=1G
+          - "--runtime={{ storage_benchmark_duration_seconds }}"
+          - --time_based
+          - --direct=1
+          - --ioengine=libaio
+          - --iodepth=16
+          - --group_reporting
+          - --output-format=normal
+      loop:
+        - {name: sequential-write, rw: write, bs: 1M}
+        - {name: sequential-read, rw: read, bs: 1M}
+        - {name: random-write, rw: randwrite, bs: 4k}
+        - {name: random-read, rw: randread, bs: 4k}
+      register: storage_qualification_benchmarks
+      changed_when: false
+
+    - name: Run sustained mixed-I/O stability test
+      ansible.builtin.command:
+        argv:
+          - "{{ storage_fio_binary }}"
+          - --name=storage-stability
+          - "--filename={{ storage_disk.mount.path }}/.storage-qualification-stability"
+          - --rw=randrw
+          - --rwmixread=70
+          - --bs=4k
+          - --size=2G
+          - "--runtime={{ storage_stability_duration_seconds }}"
+          - --time_based
+          - --direct=1
+          - --ioengine=libaio
+          - --iodepth=16
+          - --group_reporting
+          - --output-format=normal
+      register: storage_qualification_stability
+      changed_when: false
+
+  always:
+    - name: Remove qualification files
+      ansible.builtin.file:
+        path: "{{ storage_disk.mount.path }}/{{ item }}"
+        state: absent
+      loop:
+        - .storage-qualification-sequential-write
+        - .storage-qualification-sequential-read
+        - .storage-qualification-random-write
+        - .storage-qualification-random-read
+        - .storage-qualification-stability
+      changed_when: false
+
+- name: Capture SMART state after qualification
+  ansible.builtin.command:
+    cmd: >-
+      smartctl -d {{ storage_disk.smart_device_type | default('sat') }}
+      -x {{ storage_resolved_device }}
+  register: storage_qualification_smart_after
+  changed_when: false
+  failed_when: storage_qualification_smart_after.rc not in [0, 4]
+
+- name: Capture new critical kernel storage messages
+  ansible.builtin.shell:
+    cmd: |
+      journalctl -k --since "{{ ansible_facts.date_time.iso8601 }}" --no-pager |
+        grep -Ei \
+          -e 'usb.*(reset|disconnect)' \
+          -e 'uas.*(error|abort|timeout|reset)' \
+          -e 'I/O error|Buffer I/O|blk_update_request' \
+          -e 'ext4.*(error|warning)|read-only' \
+          -e 'under.?voltage|device.*offline' \
+          -e 'rejecting I/O|hostbyte=DID|timed out' || true
+    executable: /bin/bash
+  register: storage_qualification_kernel_errors
+  changed_when: false
+
+- name: Assert post-qualification health
+  ansible.builtin.assert:
+    that:
+      - storage_qualification_stability.rc == 0
+      - "'SMART overall-health self-assessment test result: PASSED' in storage_qualification_smart_after.stdout"
+      - storage_qualification_smart_after.stdout is not search('Completed:.*failure')
+      - "storage_qualification_smart_after.stdout is not search('ATA Error Count: [1-9]')"
+      - storage_qualification_kernel_errors.stdout | trim | length == 0
+    fail_msg: "Storage qualification detected a fio, SMART or kernel-log failure."
+
+- name: Assert critical SMART counters after qualification
+  ansible.builtin.assert:
+    that:
+      - >-
+        storage_qualification_smart_after.stdout is search(
+          item ~ '.*\s0$|' ~ item ~ '.*\s0\n', multiline=True)
+    fail_msg: "{{ item }} deteriorated or is unavailable for {{ storage_disk.id }}."
+  loop:
+    - Reallocated_Sector_Ct
+    - Current_Pending_Sector
+    - Offline_Uncorrectable
+
+- name: Record post-qualification UDMA CRC history
+  ansible.builtin.set_fact:
+    storage_qualification_crc_after: >-
+      {{ storage_qualification_smart_after.stdout |
+         regex_findall('(?m)^.*UDMA_CRC_Error_Count.*\s(\d+)\s*$') }}
+
+- name: Assert UDMA CRC count did not deteriorate
+  ansible.builtin.assert:
+    that:
+      - storage_qualification_crc_after | length == 1
+      - storage_qualification_crc_after | first | int ==
+        storage_qualification_crc_before | first | int
+    fail_msg: >-
+      UDMA CRC count changed during qualification for {{ storage_disk.id }}:
+      before={{ storage_qualification_crc_before }},
+      after={{ storage_qualification_crc_after }}.
+
+- name: Display qualification summary
+  ansible.builtin.debug:
+    msg:
+      usb_devices: "{{ storage_qualification_usb.stdout_lines }}"
+      usb_topology: "{{ storage_qualification_usb_tree.stdout_lines }}"
+      benchmarks: "{{ storage_qualification_benchmarks.results | map(attribute='stdout_lines') | list }}"
+      stability: "{{ storage_qualification_stability.stdout_lines }}"
+      kernel_errors: "{{ storage_qualification_kernel_errors.stdout_lines }}"

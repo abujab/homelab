@@ -26,7 +26,7 @@ when only a foundation has been implemented.
 | [ADR-0001](../decisions/ADR-0001-operating-system.md) | Operating System for Raspberry Pi Nodes | Accepted | Operating system | Implemented | WO-0001 |
 | [ADR-0002](../decisions/ADR-0002-configuration-management.md) | Configuration Management | Accepted | Automation | Implemented | WO-0002 |
 | [ADR-0003](../decisions/ADR-0003-kubernetes-distribution.md) | Kubernetes Distribution | Proposed | Kubernetes | Implemented: K3s is current; ADR status remains Proposed | WO-0003 |
-| [ADR-0004](../decisions/ADR-0004-storage.md) | Persistent Storage | Proposed | Storage | Partially implemented: Local Path Provisioner and one qualified host disk; Longhorn not installed | WO-0009 foundation only |
+| [ADR-0004](../decisions/ADR-0004-storage.md) | Persistent Storage | Proposed | Storage | Partially implemented: Local Path Provisioner and two qualified host disks; Longhorn not installed | WO-0009 and WO-0010 foundations |
 | [ADR-0005](../decisions/ADR-0005-gitops.md) | GitOps Platform | Proposed | Delivery automation | Not implemented | None approved |
 | [ADR-0006](../decisions/ADR-0006-repository-structure.md) | Repository Structure | Accepted | Repository | Implemented | WO-0002 and documentation sprints |
 | [ADR-0007](../decisions/ADR-0007-homelab-target-architecture.md) | HomeLab Target Architecture | Pending verification | Target architecture | Cannot determine: tracked ADR file is empty | None recorded |
@@ -52,7 +52,7 @@ Status interpretation:
 - ADR-0003 still records `Proposed` although K3s is implemented and is the
   current Kubernetes distribution.
 - ADR-0004 remains correctly Proposed because its Longhorn preference has not
-  been accepted or deployed; WO-0009 qualified only one host disk.
+  been accepted or deployed; WO-0009 and WO-0010 qualified the host hardware.
 - ADR-0007 is a zero-length tracked file. Its decision and status cannot be
   reconstructed safely from its filename.
 - ADR-0010 is historical: its TLS deferral was subsequently addressed by

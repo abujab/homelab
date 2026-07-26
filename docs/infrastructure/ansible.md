@@ -59,6 +59,9 @@ ansible/
 |   +-- baseline.yml
 |   +-- hardening.yml
 |   +-- k3s.yml
+|   +-- storage-discover.yml
+|   +-- storage-onboard.yml
+|   +-- storage-qualify.yml
 |   +-- storage.yml
 |   +-- update.yml
 +-- roles/
@@ -100,6 +103,7 @@ k3s_agents
 
 storage_nodes
 +-- pi4mB01
++-- pi4mB02
 ```
 
 ### Group variables
@@ -135,7 +139,10 @@ Playbooks orchestrate roles or focused maintenance tasks.
 | `baseline.yml` | Applies the common and network baseline roles to all Raspberry Pi nodes |
 | `update.yml` | Updates APT packages across all Raspberry Pi nodes |
 | `k3s.yml` | Installs and verifies the K3s cluster |
-| `storage.yml` | Validates and mounts pre-existing qualified storage on `storage_nodes` |
+| `storage-discover.yml` | Reports attached storage, identity and system-disk relationships without changing the node |
+| `storage-onboard.yml` | Initializes one explicitly authorized inventory disk, then reconciles its UUID mount |
+| `storage-qualify.yml` | Exercises one prepared node with SMART, USB, fio and kernel-error checks |
+| `storage.yml` | Reconciles previously qualified storage on `storage_nodes` without destructive operations |
 | `hardening.yml` | Reserved for security hardening work |
 
 ### Roles
@@ -149,7 +156,7 @@ The current roles are:
 | `common` | Shared operating system baseline for Raspberry Pi nodes |
 | `network` | Wired Ethernet baseline and Wi-Fi radio disablement |
 | `k3s` | K3s server, worker join, kubeconfig, labels and verification |
-| `storage` | Exact disk identity, filesystem and persistent mount validation |
+| `storage` | Inventory-driven disk discovery, guarded initialization, qualification and persistent mount reconciliation |
 
 ### Common role
 
@@ -201,13 +208,35 @@ The `k3s` role currently manages:
 
 The `storage` role currently manages:
 
-- exact expected disk model and serial preflight checks
-- ext4 filesystem and `pi-cl-storage` label validation
-- an idempotent `/srv/longhorn` mount by filesystem label
-- installation of storage diagnostic tools
-- final mount-state verification
+- one or more disks declared through `storage_disks` in host inventory
+- persistent-path, model, serial, WWN and exact-capacity identity checks
+- root, boot, swap and unexpected-mount protection
+- read-only discovery of attached block devices and persistent identifiers
+- guarded GPT and ext4 initialization through the onboarding entry point only
+- exact filesystem metadata checks, UUID-based persistent mounts and exact
+  fstab/mount verification
+- SMART, USB topology, file-based benchmark, stability and kernel-log checks
 
-The role does not partition or format disks and does not install Longhorn.
+Operational behavior is selected by `storage_mode`. Discovery and normal
+reconciliation cannot partition or format a disk. Initialization additionally
+requires the exact runtime token
+`<inventory-hostname>:<disk-id>:ERASE` and a matching
+`storage_target_disk_id`. Both are supplied at runtime and do not persist
+destructive authorization in desired state. The
+role detects an already prepared disk and skips all destructive tasks, making
+onboarding repeatable without recreating its filesystem or UUID.
+
+The role does not manage kernel USB quirks or reboot nodes. The obsolete quirk
+workaround was removed after both current enclosures operated without it. A
+future bridge that requires a kernel workaround must be evaluated explicitly
+rather than extending normal storage reconciliation. SMART passthrough remains
+mandatory for qualification but is not required to mount an already-qualified
+filesystem.
+
+The existing `pi4mB01` filesystem is represented by the same inventory model
+with its legacy `pi-cl-storage` label preserved. The role remains independent
+of Kubernetes and does not install Longhorn. The complete operator procedure is
+documented in [Storage Onboarding](../operations/storage-onboarding.md).
 
 ## Design Decisions
 

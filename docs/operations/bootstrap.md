@@ -46,7 +46,7 @@ The current platform consists of:
 - K3s for Kubernetes
 - MkDocs Material for documentation
 - TP-Link TL-SG108E wired switch for Raspberry Pi node transport
-- one qualified dedicated disk on `pi4mB01`, mounted independently of Kubernetes
+- two independently qualified dedicated disks on `pi4mB01` and `pi4mB02`, mounted independently of Kubernetes
 
 ## Architecture / Implementation
 

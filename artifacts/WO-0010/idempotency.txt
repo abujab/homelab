@@ -1,0 +1,28 @@
+pi4mB01 regression reconciliation, refactored role:
+
+pi4mB01 : ok=44 changed=0 unreachable=0 failed=0
+
+The role resolved the existing WWN path, matched model, serial, WWN and exact
+capacity, preserved ext4 label pi-cl-storage and UUID
+3e0e4776-2047-4962-bdd3-8a2e0e764a96, retained one UUID-based fstab entry and
+verified the mounted filesystem was writable. Initialization tasks were not
+eligible in reconcile mode.
+
+Final normal reconciliation, first run after promotion:
+
+- pi4mB01: ok=48 changed=0 unreachable=0 failed=0
+- pi4mB02: ok=48 changed=0 unreachable=0 failed=0
+
+Required second normal reconciliation:
+
+- pi4mB01: ok=48 changed=0 unreachable=0 failed=0
+- pi4mB02: ok=48 changed=0 unreachable=0 failed=0
+
+Final onboarding-path regression against the already prepared pi4mB02 disk:
+
+- ok=72 changed=0 unreachable=0 failed=0
+- wipefs: skipped
+- GPT creation: skipped
+- partition creation: skipped
+- mkfs.ext4: skipped
+- filesystem UUID remained ba294833-45e8-40e6-b5f6-ed785c80a7f9
