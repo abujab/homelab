@@ -3,13 +3,13 @@
 **Project:** HomeLab  
 **Owner:** Abdul Jabbar  
 **Status:** Active Development  
-**Last Updated:** 2026-07-26
+**Last Updated:** 2026-07-28
 
 ---
 
 ## Current Platform State
 
-HomeLab has completed its first ten engineering implementation sprints and the
+HomeLab has completed its first eleven engineering implementation sprints and the
 first four documentation sprints.
 
 The current platform is a working four-node Raspberry Pi K3s Kubernetes cluster with wired Ethernet node transport, MetalLB LoadBalancer support, Pi-hole internal DNS, shared Traefik application ingress, trusted HTTPS, automated cert-manager certificate lifecycle, Ansible automation and MkDocs Material documentation.
@@ -191,6 +191,25 @@ Completed:
 - final two-node normal reconciliation passed twice with `changed=0` and `failed=0`
 - reusable storage onboarding runbook, naming convention and WO-0010 evidence added
 
+### Infrastructure Sprint 11 — Power-Loss and Cold-Boot Resilience
+
+Status: Complete
+
+Completed:
+
+- July 2026 outage traced to K3s certificate validation before clock synchronization
+- Chrony confirmed as the sole active host-level time client on all four nodes
+- packaged `chrony-wait.service` enabled as a fail-closed K3s prerequisite
+- deterministic server and agent systemd dependencies managed through Ansible
+- dedicated 60-second late-time recovery timer added with bounded probes and no post-synchronization restart loop
+- root-only read-only boot-health command added for explicit recovery states
+- K3s reconciliation changed to server-first and sequential worker restarts
+- controlled delayed-NTP validation proved bounded failure and automatic recovery
+- controlled worker and server reboots proved Chrony synchronization precedes K3s
+- token content, cluster CA hashes, SQLite inode and Kubernetes cluster identity preserved
+- Pi-hole DNS, Traefik ingress, API readiness, workloads and qualified storage mounts verified after recovery
+- embedded SQLite backup readiness documented; no consistent backup currently exists and etcd snapshots are not applicable
+
 ### Documentation Sprint 1 — Overview Foundation
 
 Status: Complete
@@ -357,6 +376,15 @@ Known repository security follow-up:
   kubeconfig is excluded from Git, and branch and tag histories have been
   rewritten; GitHub Support must still dereference affected pull-request refs
   and clear cached views before server-side expungement is complete.
+
+Known resilience limitations:
+
+- K3s currently depends on public Debian NTP pool sources; an independent local
+  NTP source remains operator work.
+- Raspberry Pi nodes do not yet have a battery-backed RTC or UPS-backed graceful
+  shutdown path.
+- the embedded SQLite datastore and matching server token do not yet have an
+  implemented, tested consistent backup.
 
 Known documentation limitations:
 

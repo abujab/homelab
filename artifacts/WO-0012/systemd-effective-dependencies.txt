@@ -1,0 +1,33 @@
+WO-0012 effective systemd dependencies
+
+Server:
+Id=k3s.service
+Requires=chrony-wait.service sysinit.target system.slice
+After includes network-online.target and chrony-wait.service
+The generated base unit remains installer-owned.
+Ansible drop-in 10-homelab-server-command.conf resets ExecStart and preserves
+the effective server flags with --write-kubeconfig-mode 600.
+Ansible drop-in 20-homelab-time-gate.conf owns the time dependency.
+
+Workers pi4mB02, pi4mB03 and pi4mB04:
+Id=k3s-agent.service
+Requires includes chrony-wait.service
+After includes network-online.target and chrony-wait.service
+Ansible drop-in 20-homelab-time-gate.conf owns the time dependency.
+
+Packaged synchronization gate:
+TimeoutStartUSec=3min
+RemainAfterExit=yes
+ExecStart uses chronyc waitsync
+
+Late recovery:
+- homelab-k3s-time-recovery.timer enabled on every node
+- OnBootSec=60s
+- OnUnitInactiveSec=60s
+- each recovery probe uses `chronyc waitsync 1 0.1 0.0 1`
+- K3s start attempt is bounded at 180 seconds
+- successful synchronized-time handling leaves the oneshot service active
+- `systemctl list-timers` then reports no NEXT trigger
+
+`systemd-analyze verify` passed for chrony-wait, the recovery service and timer,
+and the applicable K3s unit on every node.

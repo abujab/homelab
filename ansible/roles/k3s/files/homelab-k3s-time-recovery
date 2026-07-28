@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+readonly K3S_SERVICE="${1:-}"
+readonly START_TIMEOUT_SECONDS="${2:-180}"
+
+case "${K3S_SERVICE}" in
+  k3s.service | k3s-agent.service) ;;
+  *)
+    logger --tag homelab-k3s-time-recovery \
+      "Refusing unsupported K3s service: ${K3S_SERVICE:-missing}"
+    exit 2
+    ;;
+esac
+
+if ! [[ "${START_TIMEOUT_SECONDS}" =~ ^[1-9][0-9]*$ ]]; then
+  logger --tag homelab-k3s-time-recovery "Invalid K3s start timeout"
+  exit 2
+fi
+
+if ! chronyc waitsync 1 0.1 0.0 1 >/dev/null 2>&1; then
+  logger --tag homelab-k3s-time-recovery \
+    "Time is not synchronized; leaving ${K3S_SERVICE} stopped"
+  exit 1
+fi
+
+if timeout "${START_TIMEOUT_SECONDS}" systemctl start "${K3S_SERVICE}"; then
+  logger --tag homelab-k3s-time-recovery \
+    "Synchronized time confirmed; ${K3S_SERVICE} is active"
+else
+  logger --tag homelab-k3s-time-recovery \
+    "Synchronized time confirmed; ${K3S_SERVICE} failed to start"
+fi
+
+# RemainAfterExit keeps this service active after the synchronized-time attempt,
+# so OnUnitInactiveSec no longer schedules retries. If K3s failed, operators
+# investigate instead of entering an infrastructure restart loop. A reboot
+# resets the oneshot state and arms the enabled timer again.
+exit 0

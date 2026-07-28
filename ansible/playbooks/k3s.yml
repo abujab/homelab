@@ -10,9 +10,84 @@
 # pi4mB02, pi4mB03 and pi4mB04 join as worker nodes.
 # ==============================================================================
 
-- name: Install K3s cluster
-  hosts: pis
+- name: Configure the K3s server
+  hosts: k3s_server
   become: true
 
   roles:
-    - k3s
+    - role: k3s
+      vars:
+        k3s_manage_labels: false
+        k3s_verify_cluster: false
+
+  post_tasks:
+    - name: Apply pending K3s server handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Verify the local Kubernetes API is ready
+      ansible.builtin.command:
+        cmd: /usr/local/bin/k3s kubectl get --raw=/readyz
+      register: k3s_server_readyz
+      changed_when: false
+      check_mode: false
+      retries: 30
+      delay: 2
+      until: k3s_server_readyz.stdout | trim == 'ok'
+
+- name: Configure K3s agents sequentially
+  hosts: k3s_agents
+  become: true
+  serial: 1
+
+  roles:
+    - role: k3s
+      vars:
+        k3s_manage_labels: false
+        k3s_verify_cluster: false
+
+  post_tasks:
+    - name: Apply pending K3s agent handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Verify the local K3s agent is active
+      ansible.builtin.command:
+        cmd: systemctl is-active k3s-agent.service
+      register: k3s_agent_active
+      changed_when: false
+      check_mode: false
+      retries: 30
+      delay: 2
+      until: k3s_agent_active.stdout | trim == 'active'
+
+    - name: Verify the Kubernetes node returned to Ready
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - get
+          - node
+          - "{{ inventory_hostname | lower }}"
+          - -o
+          - 'jsonpath={.status.conditions[?(@.type=="Ready")].status}'
+      delegate_to: "{{ groups['k3s_server'][0] }}"
+      register: k3s_agent_node_ready
+      changed_when: false
+      check_mode: false
+      retries: 30
+      delay: 2
+      until: k3s_agent_node_ready.stdout | trim == 'True'
+
+- name: Finalize and verify the K3s cluster
+  hosts: k3s_server
+  become: true
+
+  tasks:
+    - name: Apply worker role labels
+      ansible.builtin.import_role:
+        name: k3s
+        tasks_from: label_nodes
+
+    - name: Verify the complete K3s cluster
+      ansible.builtin.import_role:
+        name: k3s
+        tasks_from: verify_cluster

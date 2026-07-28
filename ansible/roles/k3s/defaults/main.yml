@@ -1,0 +1,12 @@
+---
+# Delay between bounded recovery probes after a synchronization timeout.
+k3s_time_wait_retry_seconds: 60
+
+# Maximum time allowed for a single late-recovery K3s start attempt.
+k3s_time_recovery_start_timeout_seconds: 180
+
+# Read-only local diagnostic command installed on each Kubernetes node.
+k3s_boot_health_command_path: /usr/local/sbin/homelab-k3s-boot-health
+
+# Local helper used only by the systemd-managed late-recovery service.
+k3s_time_recovery_command_path: /usr/local/sbin/homelab-k3s-time-recovery

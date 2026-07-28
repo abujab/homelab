@@ -1,0 +1,11 @@
+---
+- name: Reload systemd after K3s time-gate changes
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  listen: Restart K3s after time-gate change
+
+- name: Restart K3s after time-gate changes
+  ansible.builtin.systemd_service:
+    name: "{{ k3s_systemd_service_name }}"
+    state: restarted
+  listen: Restart K3s after time-gate change

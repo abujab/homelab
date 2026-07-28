@@ -1,0 +1,18 @@
+WO-0012 synchronized restart validation
+
+Target: pi4mB01 k3s.service
+Precondition: Chrony Leap status Normal with one selected source
+Action: controlled Ansible handler restart after effective unit changes
+
+Results:
+- chrony-wait.service: active/exited, Result=success
+- k3s.service: active/running
+- local /readyz: ok
+- all four Kubernetes nodes: Ready
+- known token/CA mismatch in current boot: false
+- server_token_content_unchanged=true
+- cluster CA file hashes unchanged
+- SQLite state.db inode unchanged
+- kube-system namespace UID unchanged
+
+No credential, CA, certificate or datastore repair action was performed.

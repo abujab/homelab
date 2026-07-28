@@ -1,0 +1,28 @@
+WO-0012 controlled control-plane reboot
+Node: pi4mB01
+
+Boot ID before: 377f84bd-3b38-4ba7-a14e-b952ca4e0ec6
+Boot ID after:  74b729a4-827d-4ef5-8747-c96dfbf30798
+
+Current-boot monotonic ordering:
+- chrony.service ExecMainStartTimestampMonotonic=8.830000s
+- chrony-wait.service started=8.922843s
+- chrony-wait.service finished=25.124663s
+- k3s.service started=25.133951s
+- k3s.service active=46.859273s
+
+Result:
+- Chrony wait completed before K3s started
+- local /readyz=ok
+- cluster_nodes_ready=4/4
+- token_ca_mismatch_current_boot=false
+- health_state=healthy
+- server_token_content_unchanged=true
+- server CA SHA-256 file hash unchanged:
+  b97cd396ebee63c41b403570a0d7b90f4b94465abbc25d542e8b8daa17c5d2b2
+- client CA SHA-256 file hash unchanged:
+  a61c2e22767d12b5802d3be9c702f8892df6a95408ada82b76003c794ff389a7
+- state.db device:inode unchanged: 45826:254171
+- kube-system UID unchanged: 3a9f435c-20da-4df5-b5e4-63dbead6ef56
+
+The protected pre-reboot token copy was deleted immediately after comparison.

@@ -145,7 +145,32 @@ For the current single control-plane node, replacing `pi4mB01` is a larger recov
 ansible-playbook playbooks/k3s.yml
 ```
 
-The current platform does not yet have a high-availability control plane or documented etcd/server-state backup.
+The current platform does not yet have a high-availability control plane or an
+implemented server-state backup.
+
+The current server datastore is embedded SQLite, not etcd. Re-running Ansible
+on an empty `pi4mB01` can recreate desired infrastructure but does not restore
+the existing cluster identity or runtime state. Do not initialize a replacement
+control plane until the availability and integrity of the original
+`/var/lib/rancher/k3s/server/db/` directory and matching server token have been
+assessed.
+
+### Cold boot is not a rebuild
+
+A node that fails to start K3s after power restoration must first be treated as
+a cold-boot recovery case. Verify Chrony, `chrony-wait.service` and the local
+health command before considering reinstallation:
+
+```bash
+sudo /usr/local/sbin/homelab-k3s-boot-health
+chronyc tracking
+systemctl status chrony-wait.service k3s.service --no-pager
+```
+
+K3s is intentionally blocked until trustworthy time exists. Do not delete the
+data directory, rotate tokens or replace CA files to resolve a certificate
+validity error caused by an unsynchronized clock. Follow the cold-boot section
+in [Troubleshooting](troubleshooting.md).
 
 ### 8. Verify recovery
 

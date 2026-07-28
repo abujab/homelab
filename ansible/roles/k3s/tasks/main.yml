@@ -17,11 +17,17 @@
 - import_tasks: install_agents.yml
   when: inventory_hostname in groups['k3s_agents']
 
+- import_tasks: time_resilience.yml
+
 - import_tasks: configure_kubeconfig.yml
   when: inventory_hostname in groups['k3s_server']
 
 - import_tasks: label_nodes.yml
-  when: inventory_hostname in groups['k3s_server']
+  when:
+    - inventory_hostname in groups['k3s_server']
+    - k3s_manage_labels | default(true) | bool
 
 - import_tasks: verify_cluster.yml
-  when: inventory_hostname in groups['k3s_server']
+  when:
+    - inventory_hostname in groups['k3s_server']
+    - k3s_verify_cluster | default(true) | bool

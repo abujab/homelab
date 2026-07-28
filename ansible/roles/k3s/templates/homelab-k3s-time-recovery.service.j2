@@ -1,0 +1,11 @@
+# Managed by Ansible. Local changes will be overwritten.
+[Unit]
+Description=Recover {{ k3s_systemd_service_name }} after delayed time synchronization
+Documentation=file://{{ k3s_boot_health_command_path }}
+Requires=chrony.service
+After=network-online.target chrony.service
+
+[Service]
+Type=oneshot
+ExecStart={{ k3s_time_recovery_command_path }} {{ k3s_systemd_service_name }} {{ k3s_time_recovery_start_timeout_seconds }}
+RemainAfterExit=yes

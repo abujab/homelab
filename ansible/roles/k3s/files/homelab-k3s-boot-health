@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+readonly CHRONY_SERVICE="chrony.service"
+readonly CHRONY_WAIT_SERVICE="chrony-wait.service"
+readonly TIME_RECOVERY_SERVICE="homelab-k3s-time-recovery.service"
+readonly TIME_RECOVERY_TIMER="homelab-k3s-time-recovery.timer"
+readonly TOKEN_CA_MISMATCH="token CA hash does not match the Cluster CA certificate hash"
+
+health_state="healthy"
+exit_code=0
+
+report() {
+  printf '%s=%s\n' "$1" "$2"
+}
+
+mark_unhealthy() {
+  health_state="$1"
+  exit_code=1
+}
+
+hostname_value="$(hostname)"
+boot_id="$(tr -d '\n' < /proc/sys/kernel/random/boot_id)"
+current_utc="$(date --utc --iso-8601=seconds)"
+
+chrony_state="$(systemctl is-active "${CHRONY_SERVICE}" 2>/dev/null || true)"
+chronyd_process="false"
+if pgrep -x chronyd >/dev/null 2>&1; then
+  chronyd_process="true"
+fi
+
+chrony_tracking="$(chronyc tracking 2>/dev/null || true)"
+chrony_leap_status="$(awk -F: '/^Leap status/ {sub(/^[[:space:]]+/, "", $2); print $2}' <<< "${chrony_tracking}")"
+chrony_stratum="$(awk -F: '/^Stratum/ {sub(/^[[:space:]]+/, "", $2); print $2}' <<< "${chrony_tracking}")"
+chrony_source="$(chronyc -n sources 2>/dev/null | awk '$1 == "^*" {print $2; exit}')"
+
+wait_state="$(systemctl is-active "${CHRONY_WAIT_SERVICE}" 2>/dev/null || true)"
+wait_result="$(systemctl show "${CHRONY_WAIT_SERVICE}" --property=Result --value 2>/dev/null || true)"
+recovery_state="$(systemctl is-active "${TIME_RECOVERY_SERVICE}" 2>/dev/null || true)"
+recovery_result="$(systemctl show "${TIME_RECOVERY_SERVICE}" --property=Result --value 2>/dev/null || true)"
+recovery_timer_state="$(systemctl is-active "${TIME_RECOVERY_TIMER}" 2>/dev/null || true)"
+
+if systemctl cat k3s.service >/dev/null 2>&1; then
+  node_role="server"
+  k3s_service="k3s.service"
+else
+  node_role="worker"
+  k3s_service="k3s-agent.service"
+fi
+
+k3s_state="$(systemctl is-active "${k3s_service}" 2>/dev/null || true)"
+
+token_ca_mismatch="false"
+token_ca_matches="$(
+  journalctl --boot --unit "${k3s_service}" --no-pager --quiet \
+    --grep "${TOKEN_CA_MISMATCH}" --output=cat 2>/dev/null || true
+)"
+if [[ -n "${token_ca_matches}" ]]; then
+  token_ca_mismatch="true"
+fi
+
+if [[ "${chrony_state}" != "active" || "${chronyd_process}" != "true" ||
+      "${chrony_leap_status}" != "Normal" || -z "${chrony_source}" ]]; then
+  if [[ "${wait_state}" == "activating" ]]; then
+    mark_unhealthy "waiting-for-time"
+  else
+    mark_unhealthy "time-wait-failed"
+  fi
+elif [[ "${wait_state}" == "failed" || "${wait_result}" == "timeout" ]]; then
+  mark_unhealthy "time-wait-failed"
+elif [[ "${wait_state}" != "active" ]]; then
+  mark_unhealthy "waiting-for-time"
+elif [[ "${k3s_state}" != "active" ]]; then
+  mark_unhealthy "k3s-failed-after-time-sync"
+fi
+
+local_readyz="not-applicable"
+cluster_nodes_ready="not-applicable"
+cluster_server_ca_sha256="not-applicable"
+if [[ "${node_role}" == "server" ]]; then
+  cluster_server_ca_sha256="$(
+    openssl x509 -in /var/lib/rancher/k3s/server/tls/server-ca.crt \
+      -outform DER 2>/dev/null | sha256sum | awk '{print $1}'
+  )"
+  if [[ -z "${cluster_server_ca_sha256}" ]]; then
+    cluster_server_ca_sha256="unavailable"
+    mark_unhealthy "k3s-failed-after-time-sync"
+  fi
+
+  if [[ "${EUID}" -ne 0 ]]; then
+    local_readyz="requires-root"
+    mark_unhealthy "k3s-failed-after-time-sync"
+  elif timeout 15 /usr/local/bin/k3s kubectl get --raw='/readyz' >/dev/null 2>&1; then
+    local_readyz="ok"
+    nodes_output="$(timeout 15 /usr/local/bin/k3s kubectl get nodes --no-headers 2>/dev/null || true)"
+    ready_nodes="$(awk '$2 == "Ready" {count++} END {print count + 0}' <<< "${nodes_output}")"
+    total_nodes="$(awk 'NF > 0 {count++} END {print count + 0}' <<< "${nodes_output}")"
+    cluster_nodes_ready="${ready_nodes}/${total_nodes}"
+    if [[ "${total_nodes}" -eq 0 || "${ready_nodes}" -ne "${total_nodes}" ]]; then
+      mark_unhealthy "k3s-failed-after-time-sync"
+    fi
+  else
+    local_readyz="failed"
+    mark_unhealthy "k3s-failed-after-time-sync"
+  fi
+fi
+
+report "hostname" "${hostname_value}"
+report "boot_id" "${boot_id}"
+report "current_utc" "${current_utc}"
+report "node_role" "${node_role}"
+report "chrony_service" "${chrony_state}"
+report "chronyd_process" "${chronyd_process}"
+report "chrony_leap_status" "${chrony_leap_status:-unknown}"
+report "chrony_stratum" "${chrony_stratum:-unknown}"
+report "chrony_selected_source" "${chrony_source:-none}"
+report "chrony_wait_service" "${wait_state}"
+report "chrony_wait_result" "${wait_result:-unknown}"
+report "time_recovery_service" "${recovery_state}"
+report "time_recovery_result" "${recovery_result:-unknown}"
+report "time_recovery_timer" "${recovery_timer_state}"
+report "k3s_service" "${k3s_service}"
+report "k3s_service_state" "${k3s_state}"
+report "local_readyz" "${local_readyz}"
+report "cluster_nodes_ready" "${cluster_nodes_ready}"
+report "cluster_server_ca_sha256" "${cluster_server_ca_sha256}"
+report "token_ca_mismatch_current_boot" "${token_ca_mismatch}"
+report "health_state" "${health_state}"
+
+exit "${exit_code}"

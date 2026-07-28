@@ -1,0 +1,15 @@
+WO-0012 final reconciliation run 1
+
+Command: ansible-playbook playbooks/baseline.yml
+pi4mB01: ok=60 changed=0 unreachable=0 failed=0 skipped=2
+pi4mB02: ok=60 changed=0 unreachable=0 failed=0 skipped=2
+pi4mB03: ok=60 changed=0 unreachable=0 failed=0 skipped=2
+pi4mB04: ok=60 changed=0 unreachable=0 failed=0 skipped=2
+
+Command: ansible-playbook playbooks/k3s.yml
+pi4mB01: ok=35 changed=0 unreachable=0 failed=0 skipped=14
+pi4mB02: ok=19 changed=0 unreachable=0 failed=0 skipped=20
+pi4mB03: ok=19 changed=0 unreachable=0 failed=0 skipped=20
+pi4mB04: ok=19 changed=0 unreachable=0 failed=0 skipped=20
+
+No K3s handler ran. No node reboot occurred.

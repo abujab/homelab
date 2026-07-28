@@ -1,0 +1,32 @@
+WO-0012 cluster health after recovery
+
+Nodes:
+- pi4mb01 Ready control-plane
+- pi4mb02 Ready worker
+- pi4mb03 Ready worker
+- pi4mb04 Ready worker
+
+Local server health:
+- /readyz=ok
+- cluster_nodes_ready=4/4
+- health_state=healthy on all four nodes
+- token_ca_mismatch_current_boot=false on all four nodes
+
+Workloads:
+- all listed pods Running and ready after server recovery
+- verbose API /readyz check passed
+- CoreDNS running
+- Metrics Server available
+
+Exposure validation:
+- Pi-hole LoadBalancer DNS contract passed
+- UDP and TCP DNS queries passed
+- Pi-hole Web ClusterIP and Traefik Ingress contract passed
+- trusted HTTPS passed
+- HTTP-to-HTTPS redirect passed
+- direct HTTP on the DNS LoadBalancer remained closed
+
+Storage:
+- pi4mB01: /dev/sda1 ext4 rw mounted at /srv/longhorn
+- pi4mB02: /dev/sda1 ext4 rw mounted at /srv/longhorn
+- no application data or Kubernetes resource was recreated

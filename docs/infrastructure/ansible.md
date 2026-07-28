@@ -165,6 +165,8 @@ The `common` role currently manages:
 - timezone configuration
 - baseline package installation
 - Chrony time synchronization
+- enablement and verification of the packaged Chrony synchronization wait unit
+- rejection of competing active time synchronization services
 - swap disablement
 - Raspberry Pi kernel cgroup parameters
 - baseline verification
@@ -201,8 +203,18 @@ The `k3s` role currently manages:
 - K3s agent installation on `pi4mB02`, `pi4mB03` and `pi4mB04`
 - kubeconfig retrieval to the management workstation
 - kubeconfig API endpoint rewrite from localhost to the control-plane IP
+- root-only K3s-generated and workstation kubeconfig permissions
+- an Ansible-owned server command drop-in without editing the generated unit
+- fail-closed `chrony-wait.service` dependencies for server and agents
+- a 60-second, systemd-managed bounded late-time recovery timer
+- read-only local cold-boot health reporting
 - worker node role labels
 - cluster verification
+
+`playbooks/k3s.yml` handles the server first and waits for local API readiness.
+It then reconciles workers with `serial: 1`, waiting for each agent and
+Kubernetes node to return before continuing. Systemd is reloaded and a K3s
+service is restarted only when managed unit content changes.
 
 ### Storage role
 
@@ -272,6 +284,7 @@ Automation should verify the resulting system state, not only apply changes. The
 - make tasks safe to repeat
 - run network changes against one node before the full `pis` group
 - verify the resulting infrastructure state after each playbook run
+- keep token handling under `no_log` and never retain token-derived evidence
 
 ## Future Improvements
 

@@ -16,6 +16,8 @@ This document covers:
 - current cluster topology
 - control-plane and worker nodes
 - kubeconfig handling
+- cold-boot time ordering
+- embedded SQLite datastore state
 - CoreDNS
 - Metrics Server
 - Local Path Provisioner
@@ -86,6 +88,40 @@ This generated file contains cluster-administrator credentials. It is excluded
 from Git and restricted to the workstation user with mode `0600`. Rerun the K3s
 playbook to replace an expired or missing local copy.
 
+### Cold-boot time ordering
+
+Every Kubernetes node uses host-level Chrony as its authoritative time client.
+The K3s server and agent units require and start after the packaged
+`chrony-wait.service`, which completes only when `chronyc waitsync` confirms a
+trusted clock. The initial probe is bounded by the packaged 180-second systemd
+timeout, so K3s fails closed instead of evaluating certificates against an
+untrusted clock.
+
+An enabled `homelab-k3s-time-recovery.timer` provides late recovery. It invokes
+a short probe every 60 seconds while time is unavailable. Once synchronization
+is proven, the companion oneshot service makes one bounded K3s start attempt
+and remains active, leaving the timer with no next trigger. A K3s failure after
+synchronized time therefore remains visible for operator investigation instead
+of entering an infrastructure restart loop.
+
+Use the local read-only health command as root:
+
+```bash
+sudo /usr/local/sbin/homelab-k3s-boot-health
+```
+
+Workers report only local Chrony and agent state. The server additionally uses
+its existing root-only credentials for `/readyz`, node readiness and a public
+cluster-CA hash. No administrator kubeconfig is distributed to workers.
+
+### Datastore
+
+The single K3s server uses the default embedded SQLite datastore at
+`/var/lib/rancher/k3s/server/db/`. Embedded etcd is not configured, so K3s etcd
+snapshots do not apply. The current backup gap and the required secure pairing
+of SQLite state with the server token are documented in
+[Backup](../operations/backup.md).
+
 ### Installed system components
 
 K3s currently provides:
@@ -141,6 +177,7 @@ Worker labels make the node list easier to read and prepare the platform for fut
 - manage Kubernetes installation through Ansible
 - keep the generated kubeconfig local, permission-restricted and outside Git
 - verify node readiness after K3s changes
+- verify trustworthy time and the K3s time gate after node boots
 - verify system components before deploying applications
 - avoid imperative workload changes where declarative manifests are practical
 - use labels to express workload placement intent
@@ -178,4 +215,6 @@ kubectl --kubeconfig ansible/kubeconfig top nodes
 - [Architecture](../overview/architecture.md)
 - [Service Catalog](../reference/service-catalog.md)
 - [Software Inventory](../reference/software-inventory.md)
+- [Troubleshooting](../operations/troubleshooting.md)
+- [Backup](../operations/backup.md)
 - [Decision Register](../reference/decision-register.md)
