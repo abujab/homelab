@@ -1,0 +1,8 @@
+---
+# Start an agent only after the Chrony gate and systemd drop-ins are active.
+
+- name: Ensure the gated K3s agent is running
+  ansible.builtin.systemd_service:
+    name: k3s-agent.service
+    state: started
+    enabled: true

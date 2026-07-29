@@ -12,33 +12,38 @@
 
 - name: Install K3s server
   ansible.builtin.shell: |
+    set -o pipefail
     curl -sfL https://get.k3s.io | sh -s - server \
       --write-kubeconfig-mode 600 \
       --disable servicelb \
       --disable traefik
   args:
     creates: /etc/systemd/system/k3s.service
+    executable: /bin/bash
+  environment:
+    INSTALL_K3S_SKIP_DOWNLOAD: >-
+      {{ 'true' if k3s_install_skip_download | bool else '' }}
+    INSTALL_K3S_SKIP_START: "true"
+  register: k3s_server_install
 
-- name: Ensure K3s server is running
-  ansible.builtin.systemd:
-    name: k3s
-    state: started
-    enabled: true
+- name: Inspect the server state after a unit-only installation
+  ansible.builtin.command:
+    cmd: systemctl is-active k3s.service
+  register: k3s_server_state_after_install
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when:
+    - k3s_server_install is changed
+    - not ansible_check_mode
 
-- name: Restrict K3s administrator kubeconfig permissions
-  ansible.builtin.file:
-    path: /etc/rancher/k3s/k3s.yaml
-    owner: root
-    group: root
-    mode: "0600"
-
-- name: Read K3s node join token
-  ansible.builtin.slurp:
-    src: /var/lib/rancher/k3s/server/node-token
-  register: k3s_node_token
-  no_log: true
-
-- name: Store K3s node token for worker joins
-  ansible.builtin.set_fact:
-    k3s_token: "{{ k3s_node_token.content | b64decode | trim }}"
-  no_log: true
+- name: Assert the new K3s server has not started before its time gate
+  ansible.builtin.assert:
+    that:
+      - k3s_server_state_after_install.stdout | trim != 'active'
+    fail_msg: >-
+      A newly installed K3s server started before the Chrony time gate was
+      installed.
+  when:
+    - k3s_server_install is changed
+    - not ansible_check_mode

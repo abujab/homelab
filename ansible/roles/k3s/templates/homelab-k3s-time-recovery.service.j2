@@ -7,5 +7,6 @@ After=network-online.target chrony.service
 
 [Service]
 Type=oneshot
-ExecStart={{ k3s_time_recovery_command_path }} {{ k3s_systemd_service_name }} {{ k3s_time_recovery_start_timeout_seconds }}
+ExecStart={{ k3s_time_recovery_command_path }} {{ k3s_systemd_service_name }} {{ k3s_time_recovery_start_timeout_seconds }} {{ k3s_time_recovery_stop_timeout_seconds }}
+TimeoutStartSec={{ k3s_time_recovery_start_timeout_seconds + k3s_time_recovery_stop_timeout_seconds + 15 }}s
 RemainAfterExit=yes

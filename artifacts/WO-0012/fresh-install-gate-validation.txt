@@ -1,0 +1,41 @@
+WO-0012 fresh-install and rebuild path validation
+
+Target: pi4mB04 only
+Date: 2026-07-29
+
+Safety boundary:
+- a ten-minute automatic rollback preserved the existing unit and drop-ins
+- /var/lib/rancher/k3s and all persistent worker state remained in place
+- the existing K3s binary was reused with INSTALL_K3S_SKIP_DOWNLOAD=true
+- K3s binary version remained v1.36.2+k3s1
+- K3s binary content remained unchanged before and after the test
+- worker join environment content was compared locally under root and unchanged=true
+- no token content or token-derived checksum was retained
+
+Validated sequence:
+1. k3s-agent.service and the recovery timer were stopped.
+2. The installer-owned unit and Ansible-owned drop-ins were moved to the
+   rollback area.
+3. systemd reported the staged agent inactive.
+4. The normal K3s role ran with INSTALL_K3S_SKIP_START=true.
+5. The installer task changed and created the agent unit.
+6. The immediate post-install state check reported the agent was not active.
+7. The explicit pre-gate inactive assertion passed.
+8. Ansible created the drop-in directory and managed Chrony gate.
+9. The handler reloaded systemd and started the agent through the gated unit.
+10. The playbook waited for the worker to return to Ready.
+
+Effective state after validation:
+- ActiveState=active
+- SubState=running
+- Requires includes chrony-wait.service
+- After includes chrony-wait.service and network-online.target
+- TimeoutStartUSec=3min
+- Restart=always
+- RestartUSec=5s
+- health_state=healthy
+
+Cleanup:
+- rollback backups and script were removed after successful verification
+- the automatic rollback timer was canceled
+- no runtime WO-0012 test drop-ins remained

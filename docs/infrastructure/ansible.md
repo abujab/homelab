@@ -201,12 +201,16 @@ The `k3s` role currently manages:
 
 - K3s server installation on `pi4mB01`
 - K3s agent installation on `pi4mB02`, `pi4mB03` and `pi4mB04`
+- unit-only first installation with `INSTALL_K3S_SKIP_START=true`
+- a runtime assertion that a newly installed unit remains inactive until its
+  Chrony gate is present
 - kubeconfig retrieval to the management workstation
 - kubeconfig API endpoint rewrite from localhost to the control-plane IP
 - root-only K3s-generated and workstation kubeconfig permissions
 - an Ansible-owned server command drop-in without editing the generated unit
 - fail-closed `chrony-wait.service` dependencies for server and agents
-- a 60-second, systemd-managed bounded late-time recovery timer
+- a 60-second, systemd-managed bounded late-time recovery timer and a
+  three-minute systemd start timeout
 - read-only local cold-boot health reporting
 - worker node role labels
 - cluster verification
@@ -214,7 +218,10 @@ The `k3s` role currently manages:
 `playbooks/k3s.yml` handles the server first and waits for local API readiness.
 It then reconciles workers with `serial: 1`, waiting for each agent and
 Kubernetes node to return before continuing. Systemd is reloaded and a K3s
-service is restarted only when managed unit content changes.
+service is restarted only when its managed unit content changes. Changes to
+the recovery helper, service or timer use a separate handler chain that reloads
+systemd, resets the recovery oneshot and rearms the timer. An unchanged run
+does not reload systemd, reset recovery state or restart K3s.
 
 ### Storage role
 

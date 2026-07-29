@@ -2,8 +2,14 @@
 # Delay between bounded recovery probes after a synchronization timeout.
 k3s_time_wait_retry_seconds: 60
 
+# Reuse an existing K3s binary only for controlled reinstall validation.
+k3s_install_skip_download: false
+
 # Maximum time allowed for a single late-recovery K3s start attempt.
 k3s_time_recovery_start_timeout_seconds: 180
+
+# Maximum time allowed to stop and settle a failed K3s start attempt.
+k3s_time_recovery_stop_timeout_seconds: 30
 
 # Read-only local diagnostic command installed on each Kubernetes node.
 k3s_boot_health_command_path: /usr/local/sbin/homelab-k3s-boot-health

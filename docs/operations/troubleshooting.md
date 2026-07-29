@@ -397,6 +397,19 @@ Use `k3s-agent` instead of `k3s` on a worker. The health command reports one of
 5. after an initial timeout, the rate-limited recovery timer starts K3s once
    synchronization is later proven.
 
+The recovery helper does not wait only on the `systemctl` client. It submits a
+non-blocking start, polls the actual K3s unit for up to 180 seconds and treats
+`auto-restart`, an increased restart count, `failed` or an inactive unit with
+no start job as failure. It then issues a stop and verifies the unit has no
+pending job or transitional/restart state. The recovery oneshot remains active
+after that settled failure so the timer cannot create an infrastructure restart
+loop.
+
+`Result=success` on the recovery oneshot means the bounded orchestration and
+containment path completed; it does not by itself mean K3s started. Confirm
+`k3s_service_state=active` and `health_state=healthy` with the boot-health
+command.
+
 When the health state is `waiting-for-time` or `time-wait-failed`, repair only
 network or NTP reachability and allow the timer to retry. SSH remains
 independent of the K3s gate. Inspect its state with:
@@ -405,6 +418,14 @@ independent of the K3s gate. Inspect its state with:
 systemctl status homelab-k3s-time-recovery.timer \
   homelab-k3s-time-recovery.service --no-pager
 systemctl list-timers homelab-k3s-time-recovery.timer --all
+systemctl show k3s.service \
+  --property=ActiveState \
+  --property=SubState \
+  --property=Result \
+  --property=NRestarts \
+  --property=TimeoutStartUSec \
+  --property=Restart \
+  --property=RestartUSec
 ```
 
 If Chrony reports `Leap status: Normal`, a source is selected and certificate,
@@ -420,6 +441,11 @@ sudo /usr/local/sbin/homelab-k3s-boot-health
 Use `k3s-agent.service` on a worker. Do not repeatedly restart K3s when the
 health state is `k3s-failed-after-time-sync`; inspect the current-boot journal
 and escalate instead.
+
+For a replacement or rebuilt node, run the repository playbook instead of the
+installer manually. The role installs the K3s unit without starting it, verifies
+that it remains inactive, installs the Chrony gate, reloads systemd and starts
+the gated service. Failure of the pre-gate inactive assertion is a safety stop.
 
 Public CA fingerprints may be inspected without exposing private material:
 

@@ -95,20 +95,35 @@ The K3s server and agent units require and start after the packaged
 `chrony-wait.service`, which completes only when `chronyc waitsync` confirms a
 trusted clock. The initial probe is bounded by the packaged 180-second systemd
 timeout, so K3s fails closed instead of evaluating certificates against an
-untrusted clock.
+untrusted clock. The Ansible-owned K3s drop-in also sets
+`TimeoutStartSec=180s`, bounding the actual systemd start job even though the
+installer-owned unit retains `Restart=always` with `RestartSec=5s`.
 
 An enabled `homelab-k3s-time-recovery.timer` provides late recovery. It invokes
 a short probe every 60 seconds while time is unavailable. Once synchronization
-is proven, the companion oneshot service makes one bounded K3s start attempt
-and remains active, leaving the timer with no next trigger. A K3s failure after
-synchronized time therefore remains visible for operator investigation instead
-of entering an infrastructure restart loop.
+is proven, the companion oneshot service requests a non-blocking K3s start and
+polls the actual unit state. Success requires `ActiveState=active`. A timeout,
+failed state or restart activity explicitly stops K3s and verifies that no
+start job, transitional state or automatic restart remains. The recovery
+oneshot then remains active, leaving the timer with no next trigger. Its own
+start timeout is 225 seconds. A K3s failure after synchronized time therefore
+remains visible for operator investigation instead of entering an
+infrastructure restart loop.
+
+Fresh server and agent installations use `INSTALL_K3S_SKIP_START=true`. The
+role installs the unit, asserts that it is not active, installs and reloads the
+Chrony dependency, and only then starts K3s through the gated unit. Existing
+nodes follow the same gated start path after relevant unit changes.
 
 Use the local read-only health command as root:
 
 ```bash
 sudo /usr/local/sbin/homelab-k3s-boot-health
 ```
+
+The command and its internal recovery helper are installed as root-owned mode
+`0700`. The server CA fingerprint is reported only when OpenSSL succeeds and
+the result is a 64-character lowercase hexadecimal SHA-256 value.
 
 Workers report only local Chrony and agent state. The server additionally uses
 its existing root-only credentials for `/readyz`, node readiness and a public

@@ -79,11 +79,12 @@ local_readyz="not-applicable"
 cluster_nodes_ready="not-applicable"
 cluster_server_ca_sha256="not-applicable"
 if [[ "${node_role}" == "server" ]]; then
-  cluster_server_ca_sha256="$(
+  if cluster_server_ca_sha256="$(
     openssl x509 -in /var/lib/rancher/k3s/server/tls/server-ca.crt \
       -outform DER 2>/dev/null | sha256sum | awk '{print $1}'
-  )"
-  if [[ -z "${cluster_server_ca_sha256}" ]]; then
+  )" && [[ "${cluster_server_ca_sha256}" =~ ^[0-9a-f]{64}$ ]]; then
+    :
+  else
     cluster_server_ca_sha256="unavailable"
     mark_unhealthy "k3s-failed-after-time-sync"
   fi

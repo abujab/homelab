@@ -3,7 +3,7 @@
 **Project:** HomeLab  
 **Owner:** Abdul Jabbar  
 **Status:** Active Development  
-**Last Updated:** 2026-07-28
+**Last Updated:** 2026-07-29
 
 ---
 
@@ -202,9 +202,15 @@ Completed:
 - packaged `chrony-wait.service` enabled as a fail-closed K3s prerequisite
 - deterministic server and agent systemd dependencies managed through Ansible
 - dedicated 60-second late-time recovery timer added with bounded probes and no post-synchronization restart loop
+- actual K3s start jobs bounded at 180 seconds; failed synchronized-time starts
+  are explicitly stopped and verified settled
+- fresh K3s installations create inactive units before applying the Chrony gate
+- recovery lifecycle changes are handler-driven with no unconditional systemd reload
 - root-only read-only boot-health command added for explicit recovery states
 - K3s reconciliation changed to server-first and sequential worker restarts
 - controlled delayed-NTP validation proved bounded failure and automatic recovery
+- controlled failed-start validation proved no pending job or automatic restart remains
+- controlled unit-only worker reinstall proved the first start occurs through the Chrony gate
 - controlled worker and server reboots proved Chrony synchronization precedes K3s
 - token content, cluster CA hashes, SQLite inode and Kubernetes cluster identity preserved
 - Pi-hole DNS, Traefik ingress, API readiness, workloads and qualified storage mounts verified after recovery

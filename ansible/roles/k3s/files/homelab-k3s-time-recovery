@@ -4,6 +4,8 @@ set -uo pipefail
 
 readonly K3S_SERVICE="${1:-}"
 readonly START_TIMEOUT_SECONDS="${2:-180}"
+readonly STOP_TIMEOUT_SECONDS="${3:-30}"
+readonly FORCE_STOP_TIMEOUT_SECONDS=10
 
 case "${K3S_SERVICE}" in
   k3s.service | k3s-agent.service) ;;
@@ -14,10 +16,92 @@ case "${K3S_SERVICE}" in
     ;;
 esac
 
-if ! [[ "${START_TIMEOUT_SECONDS}" =~ ^[1-9][0-9]*$ ]]; then
-  logger --tag homelab-k3s-time-recovery "Invalid K3s start timeout"
-  exit 2
-fi
+for timeout_value in "${START_TIMEOUT_SECONDS}" "${STOP_TIMEOUT_SECONDS}"; do
+  if ! [[ "${timeout_value}" =~ ^[1-9][0-9]*$ ]]; then
+    logger --tag homelab-k3s-time-recovery "Invalid K3s recovery timeout"
+    exit 2
+  fi
+done
+
+active_state="unknown"
+sub_state="unknown"
+service_result="unknown"
+restart_count="0"
+
+load_service_state() {
+  local properties
+  local property_name
+  local property_value
+
+  properties="$(
+    systemctl show "${K3S_SERVICE}" \
+      --property=ActiveState \
+      --property=SubState \
+      --property=Result \
+      --property=NRestarts 2>/dev/null
+  )" || return 1
+
+  while IFS='=' read -r property_name property_value; do
+    case "${property_name}" in
+      ActiveState) active_state="${property_value}" ;;
+      SubState) sub_state="${property_value}" ;;
+      Result) service_result="${property_value}" ;;
+      NRestarts) restart_count="${property_value}" ;;
+    esac
+  done <<< "${properties}"
+}
+
+unit_has_job() {
+  [[ -n "$(
+    systemctl list-jobs --no-legend --plain "${K3S_SERVICE}" 2>/dev/null
+  )" ]]
+}
+
+unit_is_settled_stopped() {
+  [[ "${active_state}" == "inactive" || "${active_state}" == "failed" ]] &&
+    [[ "${sub_state}" != "auto-restart" ]] &&
+    ! unit_has_job
+}
+
+stop_and_settle() {
+  local reason="$1"
+  local deadline
+
+  logger --tag homelab-k3s-time-recovery \
+    "${reason}; stopping ${K3S_SERVICE} and cancelling restart activity"
+  systemctl stop --no-block "${K3S_SERVICE}" >/dev/null 2>&1 || true
+
+  deadline=$((SECONDS + STOP_TIMEOUT_SECONDS))
+  while (( SECONDS < deadline )); do
+    if load_service_state && unit_is_settled_stopped; then
+      logger --tag homelab-k3s-time-recovery \
+        "${K3S_SERVICE} settled: ActiveState=${active_state} SubState=${sub_state} Result=${service_result} NRestarts=${restart_count}"
+      return 0
+    fi
+    sleep 1
+  done
+
+  logger --tag homelab-k3s-time-recovery \
+    "${K3S_SERVICE} did not settle in ${STOP_TIMEOUT_SECONDS}s; forcing process termination"
+  systemctl kill --kill-whom=all --signal=SIGKILL "${K3S_SERVICE}" \
+    >/dev/null 2>&1 || true
+  systemctl stop --no-block "${K3S_SERVICE}" >/dev/null 2>&1 || true
+
+  deadline=$((SECONDS + FORCE_STOP_TIMEOUT_SECONDS))
+  while (( SECONDS < deadline )); do
+    if load_service_state && unit_is_settled_stopped; then
+      logger --tag homelab-k3s-time-recovery \
+        "${K3S_SERVICE} force-stopped: ActiveState=${active_state} SubState=${sub_state} Result=${service_result} NRestarts=${restart_count}"
+      return 0
+    fi
+    sleep 1
+  done
+
+  load_service_state || true
+  logger --tag homelab-k3s-time-recovery \
+    "CRITICAL: ${K3S_SERVICE} remains unsettled: ActiveState=${active_state} SubState=${sub_state} Result=${service_result} NRestarts=${restart_count}"
+  return 1
+}
 
 if ! chronyc waitsync 1 0.1 0.0 1 >/dev/null 2>&1; then
   logger --tag homelab-k3s-time-recovery \
@@ -25,16 +109,64 @@ if ! chronyc waitsync 1 0.1 0.0 1 >/dev/null 2>&1; then
   exit 1
 fi
 
-if timeout "${START_TIMEOUT_SECONDS}" systemctl start "${K3S_SERVICE}"; then
+if ! load_service_state; then
   logger --tag homelab-k3s-time-recovery \
-    "Synchronized time confirmed; ${K3S_SERVICE} is active"
-else
-  logger --tag homelab-k3s-time-recovery \
-    "Synchronized time confirmed; ${K3S_SERVICE} failed to start"
+    "Unable to inspect ${K3S_SERVICE}; suppressing automatic retries"
+  exit 0
 fi
 
-# RemainAfterExit keeps this service active after the synchronized-time attempt,
-# so OnUnitInactiveSec no longer schedules retries. If K3s failed, operators
-# investigate instead of entering an infrastructure restart loop. A reboot
-# resets the oneshot state and arms the enabled timer again.
+if [[ "${active_state}" == "active" && "${sub_state}" != "auto-restart" ]]; then
+  logger --tag homelab-k3s-time-recovery \
+    "Synchronized time confirmed; ${K3S_SERVICE} is already active"
+  exit 0
+fi
+
+initial_restart_count="${restart_count}"
+if ! [[ "${initial_restart_count}" =~ ^[0-9]+$ ]]; then
+  initial_restart_count="0"
+fi
+readonly initial_restart_count
+
+if ! systemctl start --no-block "${K3S_SERVICE}"; then
+  stop_and_settle "systemd rejected the ${K3S_SERVICE} start request" || true
+  exit 0
+fi
+
+deadline=$((SECONDS + START_TIMEOUT_SECONDS))
+while (( SECONDS < deadline )); do
+  if ! load_service_state; then
+    stop_and_settle "Unable to inspect the ${K3S_SERVICE} start attempt" || true
+    exit 0
+  fi
+
+  if [[ "${active_state}" == "active" && "${sub_state}" != "auto-restart" ]]; then
+    logger --tag homelab-k3s-time-recovery \
+      "Synchronized time confirmed; ${K3S_SERVICE} reached ActiveState=${active_state} SubState=${sub_state}"
+    exit 0
+  fi
+
+  if [[ "${sub_state}" == "auto-restart" ]] ||
+     { [[ "${restart_count}" =~ ^[0-9]+$ ]] &&
+       (( restart_count > initial_restart_count )); }; then
+    stop_and_settle \
+      "${K3S_SERVICE} entered restart activity during recovery" || true
+    exit 0
+  fi
+
+  if [[ "${active_state}" == "failed" ]] ||
+     { [[ "${active_state}" == "inactive" ]] && ! unit_has_job; }; then
+    stop_and_settle \
+      "${K3S_SERVICE} failed during synchronized-time recovery" || true
+    exit 0
+  fi
+
+  sleep 1
+done
+
+stop_and_settle \
+  "${K3S_SERVICE} did not become active within ${START_TIMEOUT_SECONDS}s" || true
+
+# RemainAfterExit keeps this service active after any synchronized-time attempt.
+# This intentionally suppresses timer retries after a failed K3s start so that
+# an infrastructure restart loop cannot hide the failure from operators.
 exit 0

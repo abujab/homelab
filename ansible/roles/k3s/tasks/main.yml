@@ -19,6 +19,12 @@
 
 - import_tasks: time_resilience.yml
 
+- import_tasks: start_server.yml
+  when: inventory_hostname in groups['k3s_server']
+
+- import_tasks: start_agents.yml
+  when: inventory_hostname in groups['k3s_agents']
+
 - import_tasks: configure_kubeconfig.yml
   when: inventory_hostname in groups['k3s_server']
 
