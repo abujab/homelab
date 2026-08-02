@@ -88,6 +88,42 @@ Risk:
 
 The SSH private key used by Ansible is not stored in Git and must be protected separately.
 
+### K3s embedded SQLite
+
+Current state:
+
+`pi4mB01` uses K3s's default embedded SQLite datastore. The active server
+command has no external datastore or embedded-etcd configuration, and the live
+state consists of `state.db` with its SQLite WAL/SHM files under:
+
+```text
+/var/lib/rancher/k3s/server/db/
+```
+
+No repository automation, systemd timer or documented external target
+currently creates a consistent backup of this directory. There is therefore no
+applicable successful-backup timestamp to report. This is a known readiness
+gap, not an etcd snapshot failure: scheduled etcd snapshots and
+`k3s etcd-snapshot` are not applicable to this SQLite-backed cluster.
+
+The future backup implementation must:
+
+1. use a maintenance window and stop K3s before making a filesystem copy, or
+   use another explicitly validated SQLite-consistent method;
+2. copy the complete `/var/lib/rancher/k3s/server/db/` directory rather than a
+   lone live `state.db` file;
+3. back up `/var/lib/rancher/k3s/server/token` securely with the matching
+   datastore because it protects encrypted bootstrap data;
+4. encrypt the backup at rest and keep credentials outside Git and committed
+   evidence;
+5. record timestamp, integrity result, retention and target;
+6. test restoration in a separate approved recovery exercise before relying on
+   the backup.
+
+WO-0012 does not implement or test datastore restore. Until follow-up backup
+automation exists, loss of `pi4mB01` storage can mean loss of current cluster
+state even though desired manifests remain in Git.
+
 ### Documentation
 
 Current state:
@@ -108,7 +144,7 @@ Generated site output under `site/` is build output and should not be treated as
 The following are not yet fully backed up by an implemented platform backup system:
 
 - Raspberry Pi microSD images
-- K3s server state
+- K3s server state (embedded SQLite has no implemented consistent backup)
 - Kubernetes persistent volumes
 - Kubernetes secrets
 - Pi-hole administrative password Secret
@@ -236,7 +272,7 @@ Current recovery objectives:
 | Ansible desired state | Restore from Git |
 | Raspberry Pi node | Reimage and reconfigure from bootstrap procedure |
 | K3s worker | Rejoin through Ansible |
-| K3s control plane | Rebuild from Ansible; server-state backup is future work |
+| K3s control plane | Rebuild desired state from Ansible; current SQLite state has no implemented backup |
 | Pi-hole service | Redeploy from Git; PVC restore is future work |
 | PKI | Restore CA material from encrypted offline backup |
 | Persistent application data | Not yet guaranteed |
@@ -300,3 +336,4 @@ Future backup work should include:
 - [Repository Structure](../overview/repository.md)
 - [Infrastructure Inventory](../reference/infrastructure-inventory.md)
 - [Service Catalog](../reference/service-catalog.md)
+- [K3s Backup and Restore](https://docs.k3s.io/datastore/backup-restore)

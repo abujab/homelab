@@ -1,0 +1,16 @@
+WO-0012 final reconciliation run 1
+
+Command: ansible-playbook playbooks/baseline.yml
+pi4mB01: ok=60 changed=0 unreachable=0 failed=0 skipped=2
+pi4mB02: ok=60 changed=0 unreachable=0 failed=0 skipped=2
+pi4mB03: ok=60 changed=0 unreachable=0 failed=0 skipped=2
+pi4mB04: ok=60 changed=0 unreachable=0 failed=0 skipped=2
+
+Command: ansible-playbook playbooks/k3s.yml
+pi4mB01: ok=39 changed=0 unreachable=0 failed=0 skipped=24
+pi4mB02: ok=23 changed=0 unreachable=0 failed=0 skipped=30
+pi4mB03: ok=23 changed=0 unreachable=0 failed=0 skipped=30
+pi4mB04: ok=23 changed=0 unreachable=0 failed=0 skipped=30
+
+No K3s handler ran. No systemd reload, recovery reset, K3s restart or node
+reboot occurred. Timer-enablement inspection also remained changed=0.

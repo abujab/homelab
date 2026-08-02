@@ -1,0 +1,20 @@
+WO-0012 controlled worker reboot
+Node: pi4mB04
+
+Boot ID before: 885cb933-d88f-477c-afe8-67be8f795b5d
+Boot ID after:  be409200-d5a2-43e0-adb7-bf60bdea8627
+
+Current-boot monotonic ordering:
+- chrony.service active=8.830098s
+- NetworkManager-wait-online.service active=19.089994s
+- chrony-wait.service started=8.841031s
+- chrony-wait.service finished=24.252648s
+- k3s-agent.service started=24.262419s
+- k3s-agent.service active=37.722924s
+
+Result:
+- Chrony wait completed before the K3s agent started
+- node returned to Ready
+- previously scheduled pods recovered or were rescheduled
+- token_ca_mismatch_current_boot=false
+- health_state=healthy

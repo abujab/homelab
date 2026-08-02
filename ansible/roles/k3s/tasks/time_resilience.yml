@@ -1,0 +1,153 @@
+---
+# ==============================================================================
+# Task file: time_resilience.yml
+#
+# Purpose
+# -------
+# Prevent K3s from starting before Chrony has established trustworthy time.
+# The packaged chrony-wait unit performs the initial bounded probe. A dedicated
+# timer performs short, rate-limited late-recovery probes. After synchronized
+# time is available, its oneshot remains active so no further retry is due.
+# ==============================================================================
+
+- name: Select the local K3s systemd service
+  ansible.builtin.set_fact:
+    k3s_systemd_service_name: >-
+      {{ 'k3s.service' if inventory_hostname in groups['k3s_server'] else 'k3s-agent.service' }}
+
+- name: Verify Chrony is synchronized before changing K3s
+  ansible.builtin.command:
+    cmd: chronyc tracking
+  register: k3s_time_gate_tracking
+  changed_when: false
+  check_mode: false
+
+- name: Assert trustworthy time before changing K3s
+  ansible.builtin.assert:
+    that:
+      - "'Leap status     : Normal' in k3s_time_gate_tracking.stdout"
+      - "'Stratum         : 0' not in k3s_time_gate_tracking.stdout"
+    fail_msg: >-
+      Refusing to change {{ k3s_systemd_service_name }} while Chrony does not
+      report synchronized time.
+
+- name: Ensure the Chrony synchronization wait unit is enabled
+  ansible.builtin.systemd_service:
+    name: chrony-wait.service
+    enabled: true
+
+- name: Remove the superseded Chrony wait recovery override
+  ansible.builtin.file:
+    path: /etc/systemd/system/chrony-wait.service.d/20-homelab-k3s-recovery.conf
+    state: absent
+  notify: Apply K3s systemd changes
+
+- name: Install the bounded K3s time-recovery helper
+  ansible.builtin.copy:
+    src: homelab-k3s-time-recovery
+    dest: "{{ k3s_time_recovery_command_path }}"
+    owner: root
+    group: root
+    mode: "0700"
+  notify: Reconfigure K3s time recovery
+
+- name: Manage the K3s time-recovery service
+  ansible.builtin.template:
+    src: homelab-k3s-time-recovery.service.j2
+    dest: /etc/systemd/system/homelab-k3s-time-recovery.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reconfigure K3s time recovery
+
+- name: Manage the K3s time-recovery timer
+  ansible.builtin.template:
+    src: homelab-k3s-time-recovery.timer.j2
+    dest: /etc/systemd/system/homelab-k3s-time-recovery.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reconfigure K3s time recovery
+
+- name: Create the K3s service drop-in directory
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ k3s_systemd_service_name }}.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Manage the root-only server kubeconfig command override
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/k3s.service.d/10-homelab-server-command.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible. Local changes will be overwritten.
+      [Service]
+      ExecStart=
+      ExecStart=/usr/local/bin/k3s server --write-kubeconfig-mode 600 --disable servicelb --disable traefik
+  when: inventory_hostname in groups['k3s_server']
+  notify: Apply K3s systemd changes
+
+- name: Manage the fail-closed K3s time gate
+  ansible.builtin.copy:
+    dest: "/etc/systemd/system/{{ k3s_systemd_service_name }}.d/20-homelab-time-gate.conf"
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible. Local changes will be overwritten.
+      [Unit]
+      Requires=chrony-wait.service
+      After=chrony-wait.service
+
+      [Service]
+      TimeoutStartSec={{ k3s_time_recovery_start_timeout_seconds }}s
+  notify: Apply K3s systemd changes
+
+- name: Install the read-only K3s boot-health command
+  ansible.builtin.copy:
+    src: homelab-k3s-boot-health
+    dest: "{{ k3s_boot_health_command_path }}"
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Apply pending K3s systemd handlers before starting services
+  ansible.builtin.meta: flush_handlers
+
+- name: Inspect K3s time-recovery timer enablement
+  ansible.builtin.command:
+    cmd: systemctl is-enabled homelab-k3s-time-recovery.timer
+  register: k3s_time_recovery_timer_enablement
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Clear a terminal K3s recovery failure before operator rearm
+  ansible.builtin.command:
+    cmd: systemctl reset-failed homelab-k3s-time-recovery.service
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - k3s_time_recovery_timer_enablement.stdout | trim == 'disabled'
+
+- name: Enable and start bounded K3s late recovery
+  ansible.builtin.systemd_service:
+    name: homelab-k3s-time-recovery.timer
+    enabled: true
+    state: started
+  when: not ansible_check_mode
+
+- name: Validate the effective systemd unit definitions
+  ansible.builtin.command:
+    cmd: >-
+      systemd-analyze verify chrony-wait.service
+      homelab-k3s-time-recovery.service
+      homelab-k3s-time-recovery.timer
+      {{ k3s_systemd_service_name }}
+  changed_when: false
+  check_mode: false
+  when: not ansible_check_mode

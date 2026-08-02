@@ -363,6 +363,137 @@ ssh abdul@192.168.68.101 'timedatectl status'
 ssh abdul@192.168.68.101 'systemctl status chrony --no-pager'
 ```
 
+### K3s fails after a cold boot with a token or CA hash mismatch
+
+Problem:
+
+After a power interruption, the Kubernetes API is unavailable and the K3s
+journal reports `token CA hash does not match the Cluster CA certificate hash`.
+
+Cause:
+
+K3s evaluated the existing cluster certificate chain before the host clock was
+synchronized. This is a time-ordering failure, not evidence by itself that the
+server token, CA or SQLite datastore is corrupt.
+
+Inspect the local state before changing anything:
+
+```bash
+sudo /usr/local/sbin/homelab-k3s-boot-health
+chronyc tracking
+chronyc -n sources
+systemctl status chrony chrony-wait k3s --no-pager
+journalctl --boot --unit chrony-wait --unit k3s --no-pager
+```
+
+Use `k3s-agent` instead of `k3s` on a worker. The health command reports one of
+`waiting-for-time`, `time-wait-failed`, `k3s-failed-after-time-sync` or
+`healthy`. The normal automatic path is:
+
+1. networking becomes available;
+2. Chrony synchronizes;
+3. `chrony-wait.service` succeeds;
+4. K3s starts; or
+5. after an initial timeout, the rate-limited recovery timer starts K3s once
+   synchronization is later proven.
+
+The recovery helper does not wait only on the `systemctl` client. It submits a
+non-blocking start, polls the actual K3s unit for up to 180 seconds and treats
+`auto-restart`, an increased restart count, `failed` or an inactive unit with
+no start job as failure. It then issues a stop and verifies the unit has no
+pending job or transitional/restart state. The recovery oneshot remains active
+after that settled failure so the timer cannot create an infrastructure restart
+loop.
+
+`Result=success` on the recovery oneshot means the bounded orchestration and
+successful containment path completed; it does not by itself mean K3s started.
+If containment cannot prove that K3s settled, the recovery service instead
+remains `failed` with `ExecMainStatus=3`, and its timer becomes `inactive` and
+`disabled`. That terminal lockout prevents further automatic attempts, including
+after reboot. Confirm
+`k3s_service_state=active` and `health_state=healthy` with the boot-health
+command.
+
+When the health state is `waiting-for-time` or `time-wait-failed`, repair only
+network or NTP reachability and allow the timer to retry. SSH remains
+independent of the K3s gate. Inspect its state with:
+
+```bash
+systemctl status homelab-k3s-time-recovery.timer \
+  homelab-k3s-time-recovery.service --no-pager
+systemctl list-timers homelab-k3s-time-recovery.timer --all
+systemctl is-enabled homelab-k3s-time-recovery.timer
+systemctl show k3s.service \
+  --property=ActiveState \
+  --property=SubState \
+  --property=Result \
+  --property=NRestarts \
+  --property=TimeoutStartUSec \
+  --property=Restart \
+  --property=RestartUSec
+```
+
+If Chrony reports `Leap status: Normal`, a source is selected and certificate,
+filesystem and datastore checks show no inconsistency, an operator may perform
+one manual recovery attempt:
+
+```bash
+sudo systemctl restart chrony-wait.service
+sudo systemctl start k3s.service
+sudo /usr/local/sbin/homelab-k3s-boot-health
+```
+
+Use `k3s-agent.service` on a worker. Do not repeatedly restart K3s when the
+health state is `k3s-failed-after-time-sync`; inspect the current-boot journal
+and escalate instead.
+
+If the recovery service has exit status 3 and its timer is disabled, first
+investigate the unsettled K3s process or systemd job. After correcting the
+cause, use the repository role as the explicit operator rearm:
+
+```bash
+cd ansible
+ansible-playbook playbooks/k3s.yml --limit <hostname>
+```
+
+The role clears the terminal recovery failure, re-enables the timer, and starts
+K3s only after the Chrony gate is confirmed. Do not enable the timer repeatedly
+while the underlying K3s service remains transitional.
+
+For a replacement or rebuilt node, run the repository playbook instead of the
+installer manually. The role installs the K3s unit without enabling or starting
+it, verifies that it remains inactive and disabled, installs the Chrony gate,
+reloads systemd and starts and enables the gated service. Failure of either
+pre-gate assertion is a safety stop.
+
+Public CA fingerprints may be inspected without exposing private material:
+
+```bash
+sudo openssl x509 \
+  -in /var/lib/rancher/k3s/server/tls/server-ca.crt \
+  -outform DER | sha256sum
+```
+
+Verify continued cluster and datastore identity with non-secret facts such as
+the `kube-system` namespace UID, datastore path and inode. Token-content
+comparisons must run locally as root against a protected pre-event copy and
+must record only `server_token_content_unchanged=true` or `false`. Remove the
+comparison copy immediately.
+
+For this failure mode, never:
+
+- rotate or print the server token;
+- replace CA files or certificate material;
+- delete `/var/lib/rancher/k3s`;
+- reinstall K3s or initialize a new cluster;
+- update every agent to trust an unverified CA;
+- run an etcd restore on this SQLite-backed cluster.
+
+Stop before restart and investigate further if time is synchronized but CA
+hashes changed unexpectedly, SQLite files are missing or unreadable, the
+filesystem reports errors, or the token comparison is false. Preserve concise
+logs and escalate as a credential, datastore or storage incident.
+
 ## Kubernetes
 
 ### kubeconfig points to localhost

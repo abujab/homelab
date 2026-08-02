@@ -16,7 +16,54 @@
 # --------------------------------------------------------------------------
 
 - name: Ensure chrony is enabled and running
-  ansible.builtin.service:
-    name: chrony
+  ansible.builtin.systemd_service:
+    name: chrony.service
     state: started
     enabled: true
+
+- name: Inspect the packaged Chrony synchronization wait unit
+  ansible.builtin.command:
+    cmd: systemctl cat chrony-wait.service
+  register: chrony_wait_unit
+  changed_when: false
+  check_mode: false
+
+- name: Verify the packaged Chrony synchronization wait unit
+  ansible.builtin.assert:
+    that:
+      - "'ExecStart=/usr/bin/chronyc' in chrony_wait_unit.stdout"
+      - "'waitsync' in chrony_wait_unit.stdout"
+      - "'TimeoutStartSec=' in chrony_wait_unit.stdout"
+      - "'RemainAfterExit=yes' in chrony_wait_unit.stdout"
+    fail_msg: >-
+      chrony-wait.service does not provide the bounded synchronization gate
+      required by the K3s cold-boot design.
+    success_msg: "chrony-wait.service provides a bounded synchronization gate"
+
+- name: Enable the Chrony synchronization wait unit
+  ansible.builtin.systemd_service:
+    name: chrony-wait.service
+    enabled: true
+
+- name: Inspect competing time synchronization services
+  ansible.builtin.command:
+    cmd: "systemctl is-active {{ item }}"
+  loop:
+    - systemd-timesyncd.service
+    - ntp.service
+    - ntpd.service
+  register: competing_time_services
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Assert that Chrony is the only active time synchronization service
+  ansible.builtin.assert:
+    that:
+      - item.stdout | trim != 'active'
+    fail_msg: >-
+      Unsupported time-service state: {{ item.item }} is active while Chrony
+      is the repository-managed time synchronization service.
+  loop: "{{ competing_time_services.results }}"
+  loop_control:
+    label: "{{ item.item }}"

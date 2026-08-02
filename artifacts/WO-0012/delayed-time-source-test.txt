@@ -1,0 +1,39 @@
+WO-0012 delayed time-source availability test
+Node: pi4mB04 only
+
+Method:
+- installed a 10-minute systemd-run rollback timer first
+- temporarily dropped only outbound UDP destination port 123 in a dedicated
+  nftables table
+- left SSH and all non-NTP networking available
+- did not change the system clock or certificate validity
+- stopped the agent and reset the synchronization gate
+- restarted Chrony and requested a non-blocking agent start
+
+Blocked-time observations:
+- Chrony Leap status=Not synchronised, Stratum=0, selected source=none
+- chrony-wait.service=activating
+- k3s-agent.service=inactive
+- health_state=waiting-for-time
+- initial chrony-wait start timed out after 180 seconds
+- K3s start job failed with result=dependency and remained inactive
+- dedicated recovery probes returned exit-code at 60-second intervals
+
+Representative monotonic timeout evidence:
+- chrony-wait started at 163641.506048
+- timeout recorded at 163821.540556
+- recovery probe at 163817.305950 left the agent stopped
+
+Recovery:
+- deleted the temporary nftables table
+- canceled the rollback timer
+- requested a Chrony measurement burst
+- Chrony returned to Leap status Normal
+- next recovery timer event started k3s-agent.service
+- recovery oneshot became active/exited with Result=success
+- recovery timer remained enabled but reported no NEXT trigger
+- k3s-agent.service became active and node returned to Ready
+- health_state=healthy
+
+No token, CA, certificate or datastore change occurred. No uncontrolled K3s
+restart loop remained. Temporary nftables state was removed.

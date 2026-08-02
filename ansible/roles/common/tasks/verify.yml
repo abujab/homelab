@@ -26,6 +26,63 @@
     fail_msg: "chrony is not running"
     success_msg: "chrony is running"
 
+- name: Verify Chrony reports synchronized time
+  ansible.builtin.command:
+    cmd: chronyc tracking
+  register: chrony_tracking
+  changed_when: false
+  check_mode: false
+
+- name: Assert Chrony reports a trustworthy clock
+  ansible.builtin.assert:
+    that:
+      - "'Leap status     : Normal' in chrony_tracking.stdout"
+      - "'Stratum         : 0' not in chrony_tracking.stdout"
+    fail_msg: "Chrony does not report a synchronized system clock"
+    success_msg: "Chrony reports a synchronized system clock"
+
+- name: Inspect active Chrony sources
+  ansible.builtin.command:
+    cmd: chronyc -n sources
+  register: chrony_sources
+  changed_when: false
+  check_mode: false
+
+- name: Assert Chrony has one selected source
+  ansible.builtin.assert:
+    that:
+      - chrony_sources.stdout_lines | select('match', '^\\^\\*') | list | length == 1
+    fail_msg: "Chrony does not have a selected synchronization source"
+    success_msg: "Chrony has a selected synchronization source"
+
+- name: Verify Chrony wait is enabled for boot
+  ansible.builtin.command:
+    cmd: systemctl is-enabled chrony-wait.service
+  register: chrony_wait_enabled
+  changed_when: false
+  check_mode: false
+
+- name: Assert Chrony wait is enabled for boot
+  ansible.builtin.assert:
+    that:
+      - chrony_wait_enabled.stdout | trim == 'enabled' or ansible_check_mode
+    fail_msg: "chrony-wait.service is not enabled"
+    success_msg: "chrony-wait.service is enabled"
+
+- name: Verify NetworkManager wait-online is enabled
+  ansible.builtin.command:
+    cmd: systemctl is-enabled NetworkManager-wait-online.service
+  register: network_wait_online_enabled
+  changed_when: false
+  check_mode: false
+
+- name: Assert NetworkManager wait-online is enabled
+  ansible.builtin.assert:
+    that:
+      - network_wait_online_enabled.stdout | trim == 'enabled'
+    fail_msg: "NetworkManager-wait-online.service is not enabled"
+    success_msg: "NetworkManager wait-online is enabled"
+
 - name: Verify kernel command line contains K3s cgroup settings
   ansible.builtin.command: cat /proc/cmdline
   register: proc_cmdline

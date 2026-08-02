@@ -58,6 +58,9 @@ Status: Complete
 - three K3s workers
 - CoreDNS, Metrics Server, Local Path Provisioner and containerd
 - kubeconfig retrieval, worker labels and cluster verification
+- fail-closed K3s startup on trustworthy Chrony time
+- bounded, rate-limited late-time recovery after cold boot
+- controlled server and worker reboot validation
 
 ### Phase 4 - Networking, Ingress and TLS Foundation
 
@@ -166,6 +169,7 @@ placement. No AI service is currently deployed.
 |------------|--------|--------------------|
 | Additional disk qualification | Complete for pi4mB02 | Continue SMART and USB monitoring |
 | Longhorn evaluation | Ready for review | Approved architecture, mounted-path guard and WO-0011 |
+| K3s SQLite backup | Planned | Consistent backup target, secure token handling and restore test |
 | Backup target | Exploratory | Storage and recovery architecture |
 | Observability | Planned | Approved stack and work order |
 | GitOps | Planned | ADR-0005 resolution |

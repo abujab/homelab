@@ -16,6 +16,8 @@ This document covers:
 - current cluster topology
 - control-plane and worker nodes
 - kubeconfig handling
+- cold-boot time ordering
+- embedded SQLite datastore state
 - CoreDNS
 - Metrics Server
 - Local Path Provisioner
@@ -86,6 +88,62 @@ This generated file contains cluster-administrator credentials. It is excluded
 from Git and restricted to the workstation user with mode `0600`. Rerun the K3s
 playbook to replace an expired or missing local copy.
 
+### Cold-boot time ordering
+
+Every Kubernetes node uses host-level Chrony as its authoritative time client.
+The K3s server and agent units require and start after the packaged
+`chrony-wait.service`, which completes only when `chronyc waitsync` confirms a
+trusted clock. The initial probe is bounded by the packaged 180-second systemd
+timeout, so K3s fails closed instead of evaluating certificates against an
+untrusted clock. The Ansible-owned K3s drop-in also sets
+`TimeoutStartSec=180s`, bounding the actual systemd start job even though the
+installer-owned unit retains `Restart=always` with `RestartSec=5s`.
+
+An enabled `homelab-k3s-time-recovery.timer` provides late recovery. It invokes
+a short probe every 60 seconds while time is unavailable. Once synchronization
+is proven, the companion oneshot service requests a non-blocking K3s start and
+polls the actual unit state. Success requires `ActiveState=active`. A timeout,
+failed state or restart activity explicitly stops K3s and verifies that no
+start job, transitional state or automatic restart remains. The recovery
+oneshot then remains active, leaving the timer with no next trigger. Its own
+start timeout is 225 seconds. A K3s failure after synchronized time therefore
+remains visible for operator investigation instead of entering an
+infrastructure restart loop.
+
+If stop and force-stop cannot prove a settled K3s state, the recovery helper
+exits with status 3, leaves its service failed, and stops and disables its timer.
+This terminal lockout survives reboot and prevents further automatic attempts.
+After investigation, rerunning the K3s playbook is the explicit operator action
+that clears the recovery failure and rearms the timer.
+
+Fresh server and agent installations use `INSTALL_K3S_SKIP_ENABLE=true` and
+`INSTALL_K3S_SKIP_START=true`. The role installs the unit, asserts that it is
+inactive and disabled, installs and reloads the Chrony dependency, and only
+then starts and enables K3s through the gated unit. Existing nodes follow the
+same gated start path after relevant unit changes.
+
+Use the local read-only health command as root:
+
+```bash
+sudo /usr/local/sbin/homelab-k3s-boot-health
+```
+
+The command and its internal recovery helper are installed as root-owned mode
+`0700`. The server CA fingerprint is reported only when OpenSSL succeeds and
+the result is a 64-character lowercase hexadecimal SHA-256 value.
+
+Workers report only local Chrony and agent state. The server additionally uses
+its existing root-only credentials for `/readyz`, node readiness and a public
+cluster-CA hash. No administrator kubeconfig is distributed to workers.
+
+### Datastore
+
+The single K3s server uses the default embedded SQLite datastore at
+`/var/lib/rancher/k3s/server/db/`. Embedded etcd is not configured, so K3s etcd
+snapshots do not apply. The current backup gap and the required secure pairing
+of SQLite state with the server token are documented in
+[Backup](../operations/backup.md).
+
 ### Installed system components
 
 K3s currently provides:
@@ -141,6 +199,7 @@ Worker labels make the node list easier to read and prepare the platform for fut
 - manage Kubernetes installation through Ansible
 - keep the generated kubeconfig local, permission-restricted and outside Git
 - verify node readiness after K3s changes
+- verify trustworthy time and the K3s time gate after node boots
 - verify system components before deploying applications
 - avoid imperative workload changes where declarative manifests are practical
 - use labels to express workload placement intent
@@ -178,4 +237,6 @@ kubectl --kubeconfig ansible/kubeconfig top nodes
 - [Architecture](../overview/architecture.md)
 - [Service Catalog](../reference/service-catalog.md)
 - [Software Inventory](../reference/software-inventory.md)
+- [Troubleshooting](../operations/troubleshooting.md)
+- [Backup](../operations/backup.md)
 - [Decision Register](../reference/decision-register.md)

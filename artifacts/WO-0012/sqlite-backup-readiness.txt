@@ -1,0 +1,32 @@
+WO-0012 SQLite backup readiness
+
+Observed datastore:
+- K3s server command has no external datastore or cluster-init argument
+- effective datastore is default embedded SQLite
+- path: /var/lib/rancher/k3s/server/db/
+- owner: root:root
+- state.db, state.db-wal and state.db-shm present during normal operation
+- state.db device:inode remained 45826:254171 through controlled restarts/reboot
+
+Current backup state:
+- repository automation for a consistent K3s SQLite backup: absent
+- K3s-specific backup systemd timer: absent
+- external backup target: absent
+- most recent applicable backup timestamp/result: none
+- secure server-token backup paired with datastore: absent
+- restore test: not performed; outside WO-0012
+
+Applicability:
+- embedded etcd: not configured
+- scheduled etcd snapshots: not applicable
+- k3s etcd-snapshot: not run
+- etcd restore: not run
+
+Required follow-up:
+- implement a maintenance-window copy of the complete db directory while K3s
+  is stopped, or another explicitly validated SQLite-consistent method
+- securely back up the matching server token outside Git
+- encrypt, retain and integrity-check backups on an approved target
+- test restore separately before treating the backup as reliable
+
+No live state.db file was copied during WO-0012.

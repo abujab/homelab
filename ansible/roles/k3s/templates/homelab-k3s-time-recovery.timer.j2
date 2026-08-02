@@ -1,0 +1,12 @@
+# Managed by Ansible. Local changes will be overwritten.
+[Unit]
+Description=Rate-limited K3s recovery after delayed time synchronization
+
+[Timer]
+OnBootSec={{ k3s_time_wait_retry_seconds }}s
+OnUnitInactiveSec={{ k3s_time_wait_retry_seconds }}s
+AccuracySec=1s
+Unit=homelab-k3s-time-recovery.service
+
+[Install]
+WantedBy=timers.target

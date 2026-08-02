@@ -1,0 +1,49 @@
+WO-0012 cluster health after recovery
+
+Nodes:
+- pi4mb01 Ready control-plane
+- pi4mb02 Ready worker
+- pi4mb03 Ready worker
+- pi4mb04 Ready worker
+
+Local server health:
+- /readyz=ok
+- cluster_nodes_ready=4/4
+- health_state=healthy on all four nodes
+- token_ca_mismatch_current_boot=false on all four nodes
+- no pending K3s start jobs on any node
+- root-only boot-health command mode=0700 on every node
+- server CA fingerprint matched 64 lowercase hexadecimal characters
+- an invalid/missing CA input was rejected instead of reporting the empty-input hash
+
+Workloads:
+- all listed pods Running and ready after server recovery
+- verbose API /readyz check passed
+- CoreDNS running
+- Metrics Server available
+
+Exposure validation:
+- Pi-hole LoadBalancer DNS contract passed
+- UDP and TCP DNS queries passed
+- Pi-hole Web ClusterIP and Traefik Ingress contract passed
+- trusted HTTPS passed
+- HTTP-to-HTTPS redirect passed
+- direct HTTP on the DNS LoadBalancer remained closed
+
+Storage:
+- pi4mB01: /dev/sda1 ext4 rw mounted at /srv/longhorn
+- pi4mB02: /dev/sda1 ext4 rw mounted at /srv/longhorn
+- no application data or Kubernetes resource was recreated
+
+Review remediation validation:
+- pi4mB04 returned to Ready after the controlled failed-start test
+- pi4mB04 returned to Ready after the unit-only reinstall and gated first start
+- fresh-install assertions proved inactive/disabled before the gate and
+  active/enabled after the controlled start
+- K3s binary version and content remained unchanged during reinstall validation
+- worker join environment content remained unchanged=true by root-local comparison
+- terminal containment left recovery failed with status 3 and the timer
+  inactive/disabled, with no second attempt after 65 seconds
+- all nodes finished with K3s and recovery timers active/enabled
+- effective Restart=always, RestartUSec=5s and TimeoutStartUSec=3min on all nodes
+- no WO-0012 runtime test files or rollback material remained

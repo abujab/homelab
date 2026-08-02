@@ -1,0 +1,33 @@
+WO-0012 failed post-synchronization start validation
+
+Target: pi4mB04 only
+Date: 2026-07-29
+
+Safety boundary:
+- Chrony remained synchronized and no clock or NTP configuration changed
+- runtime-only systemd drop-ins replaced the agent command with a stalled process
+- a five-minute automatic rollback was armed before stopping the agent
+- no token, CA, certificate, network or persistent K3s data changed
+- the test used a 10-second K3s systemd timeout and a 15-second helper bound
+
+Observed failure result:
+- Result=timeout
+- NRestarts=0
+- ActiveState=inactive
+- SubState=dead
+- pending K3s jobs=none
+
+No-loop observation:
+- state after 15 additional seconds exactly matched the initial settled state
+- the observation exceeded the effective RestartUSec=5s interval
+- no auto-restart state and no pending start job appeared
+- recovery Result=success, ActiveState=active, SubState=exited
+- the active/exited recovery oneshot left the timer with no retry target
+
+Cleanup and recovery:
+- runtime-only overrides were removed
+- production systemd definitions were reloaded
+- k3s-agent.service and the recovery timer were restored
+- pi4mB04 returned to Ready
+- root-only boot-health returned health_state=healthy
+- automatic rollback was canceled and temporary test material removed

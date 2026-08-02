@@ -1,0 +1,49 @@
+---
+# Start the server only after the Chrony gate and systemd drop-ins are active.
+
+- name: Ensure the gated K3s server is running
+  ansible.builtin.systemd_service:
+    name: k3s.service
+    state: started
+    enabled: true
+
+- name: Verify the gated K3s server is active
+  ansible.builtin.command:
+    cmd: systemctl is-active k3s.service
+  register: k3s_gated_server_active
+  changed_when: false
+  check_mode: false
+  when: not ansible_check_mode
+
+- name: Verify the gated K3s server is enabled
+  ansible.builtin.command:
+    cmd: systemctl is-enabled k3s.service
+  register: k3s_gated_server_enabled
+  changed_when: false
+  check_mode: false
+  when: not ansible_check_mode
+
+- name: Assert the gated K3s server is active and enabled
+  ansible.builtin.assert:
+    that:
+      - k3s_gated_server_active.stdout | trim == 'active'
+      - k3s_gated_server_enabled.stdout | trim == 'enabled'
+  when: not ansible_check_mode
+
+- name: Restrict K3s administrator kubeconfig permissions
+  ansible.builtin.file:
+    path: /etc/rancher/k3s/k3s.yaml
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Read K3s node join token
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_node_token
+  no_log: true
+
+- name: Store K3s node token for worker joins
+  ansible.builtin.set_fact:
+    k3s_token: "{{ k3s_node_token.content | b64decode | trim }}"
+  no_log: true
