@@ -1,0 +1,39 @@
+WO-0012 terminal containment lockout validation
+
+Target: pi4mB04 recovery helper only
+Date: 2026-07-29
+
+Safety boundary:
+- a five-minute automatic rollback was armed before the controlled test
+- only the recovery service PATH was redirected to a fake systemctl state machine
+- the real k3s-agent.service remained active and was not stopped or changed
+- no token, certificate, network, clock or persistent K3s data changed
+
+Simulated terminal condition:
+- the K3s start remained transitional beyond the two-second test bound
+- stop and force-stop calls could not clear the transitional state
+- a pending K3s start job remained visible to the helper
+- bounded containment therefore returned failure
+
+Observed terminal result:
+- recovery Result=exit-code
+- recovery ExecMainStatus=3
+- recovery ActiveState=failed
+- recovery SubState=failed
+- timer LoadState=loaded
+- timer ActiveState=inactive
+- timer enablement=disabled
+- the exact recovery start timestamp remained unchanged after 65 seconds
+- the observation exceeded the normal 60-second retry interval
+
+Journal evidence:
+- CRITICAL unsettled-service state was recorded
+- CRITICAL automatic-recovery disablement was recorded
+- terminal lockout confirmed timer_active=inactive and timer_enablement=disabled
+- containment-not-proven and operator-intervention diagnostics were recorded
+
+Cleanup:
+- the test-only service override and fake state machine were removed
+- the recovery failure was reset and the timer was re-enabled and restarted
+- the automatic rollback was canceled and its script removed
+- the real K3s agent remained active and the worker remained Ready

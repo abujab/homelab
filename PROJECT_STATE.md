@@ -204,12 +204,17 @@ Completed:
 - dedicated 60-second late-time recovery timer added with bounded probes and no post-synchronization restart loop
 - actual K3s start jobs bounded at 180 seconds; failed synchronized-time starts
   are explicitly stopped and verified settled
-- fresh K3s installations create inactive units before applying the Chrony gate
+- fresh K3s installations create inactive, disabled units before applying the
+  Chrony gate and assert active, enabled state only after the gated start
+- unprovable recovery containment fails visibly, disables further timer
+  attempts across reboot and requires an operator Ansible run to rearm
 - recovery lifecycle changes are handler-driven with no unconditional systemd reload
 - root-only read-only boot-health command added for explicit recovery states
 - K3s reconciliation changed to server-first and sequential worker restarts
 - controlled delayed-NTP validation proved bounded failure and automatic recovery
 - controlled failed-start validation proved no pending job or automatic restart remains
+- controlled terminal-containment validation proved failed-service visibility,
+  persistent timer disablement and no second attempt after 65 seconds
 - controlled unit-only worker reinstall proved the first start occurs through the Chrony gate
 - controlled worker and server reboots proved Chrony synchronization precedes K3s
 - token content, cluster CA hashes, SQLite inode and Kubernetes cluster identity preserved

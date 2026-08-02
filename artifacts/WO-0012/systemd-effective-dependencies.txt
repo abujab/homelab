@@ -38,16 +38,20 @@ Late recovery:
 - failure, timeout or restart activity triggers an explicit stop
 - success requires ActiveState=active
 - failure cleanup requires no start job, transitional state or auto-restart
+- successful containment leaves recovery Result=success and suppresses retries
+- unprovable containment leaves recovery failed with ExecMainStatus=3, stops
+  and disables the timer, and requires an operator Ansible run to rearm it
 - recovery TimeoutStartUSec=3min 45s
-- any completed synchronized-time attempt leaves the oneshot service active;
+- any successfully completed synchronized-time attempt leaves the oneshot active;
   K3s state distinguishes successful start from contained failure
 - `systemctl list-timers` then reports no NEXT trigger
 
 Fresh installation:
-- INSTALL_K3S_SKIP_START=true creates the server or agent unit without starting it
-- Ansible asserts the new unit is inactive
+- INSTALL_K3S_SKIP_ENABLE=true and INSTALL_K3S_SKIP_START=true create the server
+  or agent unit without enabling or starting it
+- Ansible asserts the new unit is inactive and disabled
 - the Chrony drop-in is installed and systemd is reloaded
-- only then is K3s started through the gated unit
+- only then is K3s started and enabled through the gated unit
 
 Change-driven reconciliation:
 - helper/service/timer changes reload systemd, stop/reset recovery and rearm the timer

@@ -406,7 +406,11 @@ after that settled failure so the timer cannot create an infrastructure restart
 loop.
 
 `Result=success` on the recovery oneshot means the bounded orchestration and
-containment path completed; it does not by itself mean K3s started. Confirm
+successful containment path completed; it does not by itself mean K3s started.
+If containment cannot prove that K3s settled, the recovery service instead
+remains `failed` with `ExecMainStatus=3`, and its timer becomes `inactive` and
+`disabled`. That terminal lockout prevents further automatic attempts, including
+after reboot. Confirm
 `k3s_service_state=active` and `health_state=healthy` with the boot-health
 command.
 
@@ -418,6 +422,7 @@ independent of the K3s gate. Inspect its state with:
 systemctl status homelab-k3s-time-recovery.timer \
   homelab-k3s-time-recovery.service --no-pager
 systemctl list-timers homelab-k3s-time-recovery.timer --all
+systemctl is-enabled homelab-k3s-time-recovery.timer
 systemctl show k3s.service \
   --property=ActiveState \
   --property=SubState \
@@ -442,10 +447,24 @@ Use `k3s-agent.service` on a worker. Do not repeatedly restart K3s when the
 health state is `k3s-failed-after-time-sync`; inspect the current-boot journal
 and escalate instead.
 
+If the recovery service has exit status 3 and its timer is disabled, first
+investigate the unsettled K3s process or systemd job. After correcting the
+cause, use the repository role as the explicit operator rearm:
+
+```bash
+cd ansible
+ansible-playbook playbooks/k3s.yml --limit <hostname>
+```
+
+The role clears the terminal recovery failure, re-enables the timer, and starts
+K3s only after the Chrony gate is confirmed. Do not enable the timer repeatedly
+while the underlying K3s service remains transitional.
+
 For a replacement or rebuilt node, run the repository playbook instead of the
-installer manually. The role installs the K3s unit without starting it, verifies
-that it remains inactive, installs the Chrony gate, reloads systemd and starts
-the gated service. Failure of the pre-gate inactive assertion is a safety stop.
+installer manually. The role installs the K3s unit without enabling or starting
+it, verifies that it remains inactive and disabled, installs the Chrony gate,
+reloads systemd and starts and enables the gated service. Failure of either
+pre-gate assertion is a safety stop.
 
 Public CA fingerprints may be inspected without exposing private material:
 

@@ -31,6 +31,7 @@
   environment:
     INSTALL_K3S_SKIP_DOWNLOAD: >-
       {{ 'true' if k3s_install_skip_download | bool else '' }}
+    INSTALL_K3S_SKIP_ENABLE: "true"
     INSTALL_K3S_SKIP_START: "true"
     K3S_URL: "https://{{ hostvars[k3s_server].ansible_host }}:6443"
     K3S_TOKEN: "{{ hostvars[k3s_server].k3s_token }}"
@@ -49,13 +50,25 @@
     - k3s_agent_install is changed
     - not ansible_check_mode
 
+- name: Inspect agent enablement after a unit-only installation
+  ansible.builtin.command:
+    cmd: systemctl is-enabled k3s-agent.service
+  register: k3s_agent_enablement_after_install
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when:
+    - k3s_agent_install is changed
+    - not ansible_check_mode
+
 - name: Assert the new K3s agent has not started before its time gate
   ansible.builtin.assert:
     that:
       - k3s_agent_state_after_install.stdout | trim != 'active'
+      - k3s_agent_enablement_after_install.stdout | trim != 'enabled'
     fail_msg: >-
-      A newly installed K3s agent started before the Chrony time gate was
-      installed.
+      A newly installed K3s agent started or was enabled before the Chrony
+      time gate was installed.
   when:
     - k3s_agent_install is changed
     - not ansible_check_mode

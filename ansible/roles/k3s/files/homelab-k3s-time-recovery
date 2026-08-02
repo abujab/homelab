@@ -6,6 +6,7 @@ readonly K3S_SERVICE="${1:-}"
 readonly START_TIMEOUT_SECONDS="${2:-180}"
 readonly STOP_TIMEOUT_SECONDS="${3:-30}"
 readonly FORCE_STOP_TIMEOUT_SECONDS=10
+readonly RECOVERY_TIMER="homelab-k3s-time-recovery.timer"
 
 case "${K3S_SERVICE}" in
   k3s.service | k3s-agent.service) ;;
@@ -103,6 +104,43 @@ stop_and_settle() {
   return 1
 }
 
+terminal_containment_failure() {
+  local reason="$1"
+  local timer_active
+  local timer_enablement
+
+  logger --tag homelab-k3s-time-recovery \
+    "CRITICAL: ${reason}; disabling automatic recovery until operator intervention"
+
+  if systemctl disable --now "${RECOVERY_TIMER}" >/dev/null 2>&1; then
+    timer_active="$(systemctl is-active "${RECOVERY_TIMER}" 2>/dev/null || true)"
+    timer_enablement="$(systemctl is-enabled "${RECOVERY_TIMER}" 2>/dev/null || true)"
+    if [[ "${timer_active}" == "inactive" && "${timer_enablement}" == "disabled" ]]; then
+      logger --tag homelab-k3s-time-recovery \
+        "Terminal recovery lockout applied: timer_active=${timer_active} timer_enablement=${timer_enablement}"
+    else
+      logger --tag homelab-k3s-time-recovery \
+        "CRITICAL: terminal recovery lockout was not confirmed: timer_active=${timer_active:-unknown} timer_enablement=${timer_enablement:-unknown}"
+    fi
+  else
+    logger --tag homelab-k3s-time-recovery \
+      "CRITICAL: unable to stop and disable ${RECOVERY_TIMER}"
+  fi
+
+  logger --tag homelab-k3s-time-recovery \
+    "${K3S_SERVICE} containment was not proven; recovery service will remain failed"
+  exit 3
+}
+
+contain_or_fail() {
+  local reason="$1"
+
+  if ! stop_and_settle "${reason}"; then
+    terminal_containment_failure \
+      "${K3S_SERVICE} remained transitional, restarting or queued after bounded containment"
+  fi
+}
+
 if ! chronyc waitsync 1 0.1 0.0 1 >/dev/null 2>&1; then
   logger --tag homelab-k3s-time-recovery \
     "Time is not synchronized; leaving ${K3S_SERVICE} stopped"
@@ -110,8 +148,7 @@ if ! chronyc waitsync 1 0.1 0.0 1 >/dev/null 2>&1; then
 fi
 
 if ! load_service_state; then
-  logger --tag homelab-k3s-time-recovery \
-    "Unable to inspect ${K3S_SERVICE}; suppressing automatic retries"
+  contain_or_fail "Unable to inspect ${K3S_SERVICE} before recovery"
   exit 0
 fi
 
@@ -128,14 +165,14 @@ fi
 readonly initial_restart_count
 
 if ! systemctl start --no-block "${K3S_SERVICE}"; then
-  stop_and_settle "systemd rejected the ${K3S_SERVICE} start request" || true
+  contain_or_fail "systemd rejected the ${K3S_SERVICE} start request"
   exit 0
 fi
 
 deadline=$((SECONDS + START_TIMEOUT_SECONDS))
 while (( SECONDS < deadline )); do
   if ! load_service_state; then
-    stop_and_settle "Unable to inspect the ${K3S_SERVICE} start attempt" || true
+    contain_or_fail "Unable to inspect the ${K3S_SERVICE} start attempt"
     exit 0
   fi
 
@@ -148,25 +185,25 @@ while (( SECONDS < deadline )); do
   if [[ "${sub_state}" == "auto-restart" ]] ||
      { [[ "${restart_count}" =~ ^[0-9]+$ ]] &&
        (( restart_count > initial_restart_count )); }; then
-    stop_and_settle \
-      "${K3S_SERVICE} entered restart activity during recovery" || true
+    contain_or_fail \
+      "${K3S_SERVICE} entered restart activity during recovery"
     exit 0
   fi
 
   if [[ "${active_state}" == "failed" ]] ||
      { [[ "${active_state}" == "inactive" ]] && ! unit_has_job; }; then
-    stop_and_settle \
-      "${K3S_SERVICE} failed during synchronized-time recovery" || true
+    contain_or_fail \
+      "${K3S_SERVICE} failed during synchronized-time recovery"
     exit 0
   fi
 
   sleep 1
 done
 
-stop_and_settle \
-  "${K3S_SERVICE} did not become active within ${START_TIMEOUT_SECONDS}s" || true
+contain_or_fail \
+  "${K3S_SERVICE} did not become active within ${START_TIMEOUT_SECONDS}s"
 
-# RemainAfterExit keeps this service active after any synchronized-time attempt.
-# This intentionally suppresses timer retries after a failed K3s start so that
-# an infrastructure restart loop cannot hide the failure from operators.
+# RemainAfterExit keeps this service active after a synchronized-time success or
+# proven containment. Terminal containment failure exits earlier after disabling
+# the timer, so neither path can hide a failure in an infrastructure retry loop.
 exit 0

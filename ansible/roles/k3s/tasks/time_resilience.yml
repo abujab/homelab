@@ -118,6 +118,22 @@
 - name: Apply pending K3s systemd handlers before starting services
   ansible.builtin.meta: flush_handlers
 
+- name: Inspect K3s time-recovery timer enablement
+  ansible.builtin.command:
+    cmd: systemctl is-enabled homelab-k3s-time-recovery.timer
+  register: k3s_time_recovery_timer_enablement
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Clear a terminal K3s recovery failure before operator rearm
+  ansible.builtin.command:
+    cmd: systemctl reset-failed homelab-k3s-time-recovery.service
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - k3s_time_recovery_timer_enablement.stdout | trim == 'disabled'
+
 - name: Enable and start bounded K3s late recovery
   ansible.builtin.systemd_service:
     name: homelab-k3s-time-recovery.timer

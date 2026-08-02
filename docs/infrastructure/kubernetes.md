@@ -110,10 +110,17 @@ start timeout is 225 seconds. A K3s failure after synchronized time therefore
 remains visible for operator investigation instead of entering an
 infrastructure restart loop.
 
-Fresh server and agent installations use `INSTALL_K3S_SKIP_START=true`. The
-role installs the unit, asserts that it is not active, installs and reloads the
-Chrony dependency, and only then starts K3s through the gated unit. Existing
-nodes follow the same gated start path after relevant unit changes.
+If stop and force-stop cannot prove a settled K3s state, the recovery helper
+exits with status 3, leaves its service failed, and stops and disables its timer.
+This terminal lockout survives reboot and prevents further automatic attempts.
+After investigation, rerunning the K3s playbook is the explicit operator action
+that clears the recovery failure and rearms the timer.
+
+Fresh server and agent installations use `INSTALL_K3S_SKIP_ENABLE=true` and
+`INSTALL_K3S_SKIP_START=true`. The role installs the unit, asserts that it is
+inactive and disabled, installs and reloads the Chrony dependency, and only
+then starts and enables K3s through the gated unit. Existing nodes follow the
+same gated start path after relevant unit changes.
 
 Use the local read-only health command as root:
 

@@ -201,9 +201,10 @@ The `k3s` role currently manages:
 
 - K3s server installation on `pi4mB01`
 - K3s agent installation on `pi4mB02`, `pi4mB03` and `pi4mB04`
-- unit-only first installation with `INSTALL_K3S_SKIP_START=true`
-- a runtime assertion that a newly installed unit remains inactive until its
-  Chrony gate is present
+- unit-only first installation with `INSTALL_K3S_SKIP_ENABLE=true` and
+  `INSTALL_K3S_SKIP_START=true`
+- runtime assertions that a newly installed unit remains inactive and disabled
+  until its Chrony gate is present
 - kubeconfig retrieval to the management workstation
 - kubeconfig API endpoint rewrite from localhost to the control-plane IP
 - root-only K3s-generated and workstation kubeconfig permissions
@@ -211,6 +212,8 @@ The `k3s` role currently manages:
 - fail-closed `chrony-wait.service` dependencies for server and agents
 - a 60-second, systemd-managed bounded late-time recovery timer and a
   three-minute systemd start timeout
+- terminal recovery containment that fails visibly and disables its timer until
+  an operator reruns the role
 - read-only local cold-boot health reporting
 - worker node role labels
 - cluster verification
@@ -221,7 +224,9 @@ Kubernetes node to return before continuing. Systemd is reloaded and a K3s
 service is restarted only when its managed unit content changes. Changes to
 the recovery helper, service or timer use a separate handler chain that reloads
 systemd, resets the recovery oneshot and rearms the timer. An unchanged run
-does not reload systemd, reset recovery state or restart K3s.
+does not reload systemd, reset recovery state or restart K3s. Rerunning the
+role after a terminal containment failure explicitly clears the failed recovery
+state and re-enables its disabled timer.
 
 ### Storage role
 

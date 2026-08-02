@@ -38,5 +38,12 @@ Storage:
 Review remediation validation:
 - pi4mB04 returned to Ready after the controlled failed-start test
 - pi4mB04 returned to Ready after the unit-only reinstall and gated first start
+- fresh-install assertions proved inactive/disabled before the gate and
+  active/enabled after the controlled start
 - K3s binary version and content remained unchanged during reinstall validation
 - worker join environment content remained unchanged=true by root-local comparison
+- terminal containment left recovery failed with status 3 and the timer
+  inactive/disabled, with no second attempt after 65 seconds
+- all nodes finished with K3s and recovery timers active/enabled
+- effective Restart=always, RestartUSec=5s and TimeoutStartUSec=3min on all nodes
+- no WO-0012 runtime test files or rollback material remained
